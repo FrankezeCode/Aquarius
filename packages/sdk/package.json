@@ -1,0 +1,23 @@
+{
+  "name": "@aquarius/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./aave-selva": { "types": "./dist/aave-selva/index.d.ts", "default": "./dist/aave-selva/index.js" },
+    "./uniswap-selva": { "types": "./dist/uniswap-selva/index.d.ts", "default": "./dist/uniswap-selva/index.js" },
+    "./lido-selva": { "types": "./dist/lido-selva/index.d.ts", "default": "./dist/lido-selva/index.js" },
+    "./provider": { "types": "./dist/provider.d.ts", "default": "./dist/provider.js" }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

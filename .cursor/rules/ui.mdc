@@ -1,0 +1,36 @@
+---
+globs: app/**/components/**/*.tsx,app/**/ui/**/*.tsx,app/**/layout.tsx,app/**/page.tsx
+alwaysApply: false
+---
+# UI & UX Rules — Aquarius DeFi Lab
+
+## Design Philosophy
+- Clarity over cleverness.
+- Reduce cognitive load at every step.
+- The user should always know what to do next.
+
+## Components
+- Use Shadcn/UI where applicable.
+- All components must be accessible by default.
+- Prefer composition over deeply nested components.
+
+## Language
+- Avoid protocol jargon unless necessary.
+- Prefer human-readable explanations over raw metrics.
+
+## State & Feedback
+- Every action must produce visible feedback.
+- Loading, error, and empty states are mandatory.
+
+## Visual Hierarchy
+- Highlight outcomes, not features.
+- Make the primary action obvious.
+
+
+## Summary (Non-Negotiable)
+- Use Tailwind CSS for styling.
+- Prefer Shadcn/UI components when applicable.
+- All UI components must be accessible (ARIA, keyboard).
+- UI must never contain business logic.
+- Dashboards visualize signals — they do not compute them.
+- Frontend should degrade gracefully if streams are unavailable.

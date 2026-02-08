@@ -1,0 +1,38 @@
+# Aave Risk Workflow — CRE Configuration
+#
+# This workflow monitors Aave protocol health factors, oracle prices,
+# and liquidation thresholds to produce risk signals.
+#
+# Execution: Triggered by CRE webhook or scheduled cron.
+
+name: aave-risk
+version: "0.1.0"
+
+trigger:
+  type: webhook
+  path: /internal/ingest/cre-webhook
+
+schedule:
+  cron: "*/5 * * * *" # Every 5 minutes
+
+steps:
+  - name: fetch-on-chain-data
+    description: Pull latest Aave pool data from supported chains
+    timeout_ms: 30000
+
+  - name: compute-risk-signals
+    description: Calculate health factor distributions and liquidation proximity
+    depends_on: [fetch-on-chain-data]
+    timeout_ms: 15000
+
+  - name: emit-signals
+    description: Publish risk signals to the signal bus
+    depends_on: [compute-risk-signals]
+    timeout_ms: 5000
+
+chains:
+  - ethereum
+  - arbitrum
+  - base
+
+abis_dir: ./abis

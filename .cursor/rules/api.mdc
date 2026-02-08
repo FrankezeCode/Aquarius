@@ -1,0 +1,42 @@
+---
+description: Use this rule when designing, modifying, or reviewing API routes, server actions, protocol endpoints, or developer-facing APIs.  Includes REST endpoints, versioned APIs, data contracts (DTOs), schema validation, authentication, rate limiting, and API responses intended for external developers or internal services. That is specifically API routes, server actions, backend services, protocol endpoints, developer-facing APIs, data contracts, schema validation, authentication, authorization, rate limiting, and API versioning etc.
+alwaysApply: false
+---
+
+# API Design Rules — Aquarius DeFi Lab
+
+## API-First Philosophy
+- Aquarius is API-first. UI is a consumer, not the source of truth.
+- Every capability exposed internally should be exposable externally.
+
+## Versioning
+- All APIs must be versioned (e.g. /api/v1).
+- Never introduce breaking changes without a new version.
+
+## Contracts & Validation
+- Use Zod for schema validation.
+- Define clear request and response contracts (DTOs).
+- Never return ambiguous or undocumented fields.
+
+## Error Handling
+- Errors must be structured, predictable, and machine-readable.
+- Avoid leaking internal errors or stack traces.
+
+## Authentication & Security
+- Never trust client input.
+- Validate permissions explicitly.
+- Treat protocol data as untrusted until verified.
+
+## Performance
+- APIs should be deterministic and cache-friendly.
+- Avoid unnecessary joins or heavy computation in request paths.
+
+## Summary (Non-Negotiable)
+- Aquarius is API-first. The frontend is a consumer, not the core.
+- All APIs must be versionable and protocol-scoped.
+- Public APIs live under `/api/public/*`
+- Internal-only APIs live under `/api/internal/*`
+- Never expose raw database schemas directly.
+- Prefer explicit DTOs and shared types.
+- Use Zod for request and response validation.
+- APIs should be deterministic, stateless, and cache-aware.

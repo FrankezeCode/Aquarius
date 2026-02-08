@@ -1,0 +1,36 @@
+# Uniswap Arbitrage Workflow — CRE Configuration
+#
+# This workflow monitors Uniswap pools for cross-chain and cross-DEX
+# arbitrage opportunities.
+#
+# Execution: Triggered by CRE webhook or scheduled cron.
+
+name: uniswap-arb
+version: "0.1.0"
+
+trigger:
+  type: webhook
+  path: /internal/ingest/cre-webhook
+
+schedule:
+  cron: "*/2 * * * *" # Every 2 minutes
+
+steps:
+  - name: fetch-pool-states
+    description: Pull latest Uniswap pool reserves and tick data
+    timeout_ms: 30000
+
+  - name: detect-arb-opportunities
+    description: Compare prices across pools and chains for arbitrage
+    depends_on: [fetch-pool-states]
+    timeout_ms: 15000
+
+  - name: emit-opportunities
+    description: Publish detected opportunities to the signal bus
+    depends_on: [detect-arb-opportunities]
+    timeout_ms: 5000
+
+chains:
+  - ethereum
+  - arbitrum
+  - base
