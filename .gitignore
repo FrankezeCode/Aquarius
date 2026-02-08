@@ -19,6 +19,7 @@ out
 *.swp
 .DS_Store
 Thumbs.db
+.cursor
 
 # Logs
 *.log
@@ -31,3 +32,13 @@ coverage
 
 # Misc
 *.tsbuildinfo
+_tmp_*
+
+# Cursor AI
+.cursor
+
+# Vercel
+.vercel
+
+# pnpm
+.pnpm-debug.log
