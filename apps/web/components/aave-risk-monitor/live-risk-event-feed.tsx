@@ -54,7 +54,7 @@ export function LiveRiskEventFeed({
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Live Risk Feed
+          Live Agent Feed
         </h3>
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">

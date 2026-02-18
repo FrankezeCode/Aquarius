@@ -4,11 +4,25 @@
  * Bounded context: CRE (Chainlink Runtime Environment)
  * This endpoint receives webhook payloads from CRE workflow triggers.
  *
- * Edge-runtime safe: no coupling to public API logic.
- * No heavy dependencies — parse, validate, forward.
+ * APPLICATION LAYER — pure orchestration:
+ *   1. Validate payload
+ *   2. Resolve monitor from registry
+ *   3. Run monitor → normalized MonitorSnapshot
+ *   4. Cache snapshot in RiskQueryService
+ *   5. Return response derived from snapshot
+ *
+ * This layer NEVER imports domain services, NEVER transforms domain
+ * objects, NEVER performs normalization.  All mapping is delegated
+ * to the protocol monitor adapter (AaveMonitor).
+ *
+ * Integrated workflows:
+ *   - aave-risk  → Aave Risk Intelligence pipeline (via AaveMonitor)
  */
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { Protocol, type Chain, VALID_CHAINS } from "../../../protocols/shared/types/risk-api.types.js";
+import { getMonitor } from "../../../protocols/shared/application/monitors/monitor-registry.js";
+import { queryService } from "../../v1/aave-risk/index.js";
 
 export interface CREWebhookPayload {
   workflowId: string;
@@ -16,6 +30,9 @@ export interface CREWebhookPayload {
   chainId: string;
   data: Record<string, unknown>;
 }
+
+/** Workflow IDs that trigger the Aave risk-intelligence pipeline. */
+const AAVE_RISK_WORKFLOWS = new Set(["aave-risk", "aave-risk-monitor"]);
 
 export async function registerCREWebhookRoute(
   app: FastifyInstance,
@@ -32,9 +49,44 @@ export async function registerCREWebhookRoute(
       });
     }
 
-    // TODO: Forward to appropriate workflow handler based on workflowId
     // TODO: Add Zod schema validation per security rules
 
+    // ── Route to Aave Risk Intelligence pipeline ───────────────────
+    if (AAVE_RISK_WORKFLOWS.has(payload.workflowId)) {
+      try {
+        const monitor = getMonitor(Protocol.AAVE);
+        if (!monitor) {
+          return reply.status(503).send({
+            error: "Aave monitor not registered",
+            workflowId: payload.workflowId,
+          });
+        }
+
+        // Delegate entirely to the monitor adapter.
+        // AaveMonitor handles: domain call, normalization, CCIP dispatch.
+        const snapshot = await monitor.run(payload.chainId as Chain);
+
+        // Cache the normalized snapshot (O(1), synchronous).
+        queryService.updateSnapshot(snapshot);
+
+        return reply.status(200).send({
+          status: "processed",
+          workflowId: payload.workflowId,
+          chainId: snapshot.chain,
+          globalRiskIndex: snapshot.globalRiskIndex,
+          liquidationPressure: snapshot.liquidationPressure,
+          timestamp: snapshot.timestamp,
+        });
+      } catch (err) {
+        request.log.error(err, "Aave risk monitor pipeline failed");
+        return reply.status(500).send({
+          error: "Risk monitor pipeline error",
+          workflowId: payload.workflowId,
+        });
+      }
+    }
+
+    // ── Default: accept but don't process (other workflow IDs) ─────
     return reply.status(202).send({
       status: "accepted",
       workflowId: payload.workflowId,

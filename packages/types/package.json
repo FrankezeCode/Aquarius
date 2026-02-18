@@ -6,7 +6,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./risk": { "types": "./dist/risk/index.d.ts", "default": "./dist/risk/index.js" },
+    "./risk/base": { "types": "./dist/risk/base.d.ts", "default": "./dist/risk/base.js" },
+    "./risk/aave": { "types": "./dist/risk/aave.d.ts", "default": "./dist/risk/aave.js" },
+    "./risk/lido": { "types": "./dist/risk/lido.d.ts", "default": "./dist/risk/lido.js" },
+    "./risk/uniswap": { "types": "./dist/risk/uniswap.d.ts", "default": "./dist/risk/uniswap.js" }
   },
   "scripts": {
     "build": "tsc",

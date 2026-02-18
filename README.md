@@ -49,6 +49,13 @@ cp .env.example .env
 | `pnpm lint`  | Lint all workspaces        |
 | `pnpm test`  | Run tests                  |
 | `pnpm dev --filter web` | Run dev (web, api, etc.)     |
+| `pnpm dev --filter api` | Run dev (api, api, etc.)     |
+| `pnpm run:agent` | Run agent  |
+| `pnpm run:cre` | Run CRE SIMULATION  |
+
+
+ 
+
 
 ## Run locally
 

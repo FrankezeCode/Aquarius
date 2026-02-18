@@ -67,8 +67,8 @@ export function ProtocolStatusBadge({
       </div>
 
       <p className="mt-4 max-w-md text-sm text-muted-foreground">
-        Based on liquidity stress, liquidation pressure, oracle integrity, and
-        governance state.
+        Based on reserve stress, liquidation velocity, oracle integrity, and
+        agent risk signals.
       </p>
     </section>
   );

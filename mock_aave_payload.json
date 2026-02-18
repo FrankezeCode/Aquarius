@@ -1,0 +1,9 @@
+{
+    "workflowId": "aave-risk",
+    "chainId": 1,
+    "positions": [
+      { "user": "0x123...", "collateral": 1000, "debt": 200, "healthFactor": 1.5 },
+      { "user": "0x456...", "collateral": 500, "debt": 600, "healthFactor": 0.9 }
+    ]
+  }
+  

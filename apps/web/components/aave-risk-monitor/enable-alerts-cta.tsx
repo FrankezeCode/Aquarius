@@ -31,7 +31,7 @@ export function EnableAlertsCTA({
       aria-label="Enable Alerts"
     >
       <p className="mb-6 text-lg text-muted-foreground">
-        Get alerted before your risk escalates.
+        Get alerted before liquidation risk increases.
       </p>
 
       {isEnabled ? (
@@ -45,7 +45,7 @@ export function EnableAlertsCTA({
           onClick={onEnableAlerts}
           className="h-14 px-10 text-base font-semibold"
         >
-          Enable Alerts
+          Enable Telegram Alerts
         </Button>
       )}
 

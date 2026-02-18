@@ -33,6 +33,7 @@ coverage
 # Misc
 *.tsbuildinfo
 _tmp_*
+.env
 
 # Cursor AI
 .cursor

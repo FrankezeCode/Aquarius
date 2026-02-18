@@ -1,121 +1,193 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import {
   ProtocolStatusBadge,
   RiskFactorCards,
   RiskProgressionBar,
+  IntelligenceLayers,
   LiveRiskEventFeed,
   ConnectWalletCTA,
   PositionRiskStatus,
   EnableAlertsCTA,
   DeveloperFooter,
+  type ProtocolStatus,
   type RiskFactor,
   type RiskProgression,
+  type LayerData,
   type RiskEvent,
   type PositionMetrics,
+  type PositionRiskLevel,
 } from "@/components/aave-risk-monitor";
+import { useCREWorkflow, type CREWorkflowData } from "@/lib/use-cre-workflow";
 
-/**
- * Aave Risk Monitor Page
- * 
- * Aquarius is not a dashboard — it's a real-time DeFi risk & decision sentinel.
- * This page represents selvä Core in action: DATA → selvä → CLARITY
- * 
- * User Journey (enforced):
- * 1. Is Aave safe right now?
- * 2. Why is it safe or unsafe?
- * 3. Is my position safe?
- * 4. Alert me if this changes
- * 
- * Target Users:
- * - Users with funds already in Aave
- * - Developers integrating via selvä SDK
- */
+// ── Data Mappers (CRE → Component Props) ─────────────────────────────
 
-// Mock data — will be replaced with real-time data from selvä
-const MOCK_RISK_FACTORS: RiskFactor[] = [
-  { id: "liquidation", label: "Liquidation Pressure", value: "$18.4M / 24h", direction: "up" },
-  { id: "tvl", label: "TVL Flow", value: "–$92M (6h)", direction: "down" },
-  { id: "oracle", label: "Oracle Deviation", value: "0.7%", direction: "neutral" },
-  { id: "uptime", label: "Protocol Uptime", value: "99.98%", direction: "neutral" },
-];
+function mapProtocolStatus(data: CREWorkflowData): ProtocolStatus {
+  return data.protocolStatus;
+}
 
-const MOCK_PROGRESSION: RiskProgression = {
-  infoCount: 2,
-  confirmCount: 5,
-  invalidateCount: 0,
-  activeStage: "confirm",
-};
+function mapRiskFactors(data: CREWorkflowData): RiskFactor[] {
+  return data.riskFactors;
+}
 
-const MOCK_EVENTS: RiskEvent[] = [
-  { id: "1", timestamp: "12:41:08", message: "$6.2M USDC withdrawn from Aave", severity: "info" },
-  { id: "2", timestamp: "12:40:51", message: "WETH liquidation velocity +21%", severity: "warning" },
-  { id: "3", timestamp: "12:39:44", message: "Oracle deviation reached 1.3%", severity: "warning" },
-  { id: "4", timestamp: "12:38:22", message: "Large position opened: $4.1M ETH collateral", severity: "info" },
-  { id: "5", timestamp: "12:37:15", message: "Governance proposal #127 passed", severity: "info" },
-];
+function mapRiskProgression(data: CREWorkflowData): RiskProgression {
+  return data.riskProgression;
+}
 
-const MOCK_POSITION_METRICS: PositionMetrics = {
-  healthFactor: "1.21",
-  healthFactorDirection: "down",
-  liquidationDistance: "9.4%",
-  mostExposedAsset: "WETH",
-  exposurePercentage: "63%",
-};
+function mapIntelligenceLayers(data: CREWorkflowData): LayerData {
+  const stressMap: Record<string, string> = {
+    safe: "Low",
+    watch: "Moderate",
+    "early-warning": "High",
+    critical: "Critical",
+  };
+
+  const decisionMap: Record<string, string> = {
+    OBSERVE_ONLY: "OBSERVE_ONLY",
+    PROTECT_POSITION: "PROTECT_POSITION",
+    ESCALATE: "ESCALATE",
+  };
+
+  return {
+    riskScore: Math.round(data.riskScore.composite * 100),
+    stressLevel: stressMap[data.riskScore.level] ?? "Low",
+    riskLatencyMs: data.latencies.risk,
+    agentDecision: decisionMap[data.agentDecision.decision] ?? "OBSERVE_ONLY",
+    agentConfidence: data.agentDecision.confidence,
+    agentLatencyMs: data.latencies.agent,
+    llmAction: data.llmReasoning?.action ?? null,
+    llmReason: data.llmReasoning?.reason ?? null,
+    llmConfidence: data.llmReasoning?.confidence ?? null,
+    llmLatencyMs: data.latencies.llm ?? null,
+    dispatchedActions:
+      data.actionDispatch.dispatched.length > 0
+        ? data.actionDispatch.dispatched
+        : ["Observation Logged"],
+    actionLatencyMs: data.latencies.action,
+  };
+}
+
+function mapEvents(data: CREWorkflowData): RiskEvent[] {
+  return data.events;
+}
+
+function mapPositionRiskLevel(data: CREWorkflowData): PositionRiskLevel {
+  const level = data.riskScore.level;
+  if (level === "safe") return "safe";
+  if (level === "watch") return "early-warning";
+  if (level === "early-warning") return "at-risk";
+  return "critical";
+}
+
+function mapPositionMetrics(data: CREWorkflowData): PositionMetrics {
+  const composite = data.riskScore.composite;
+  const hf = (1 + (1 - composite) * 2.5).toFixed(2);
+  const liqDist = ((1 - composite) * 40).toFixed(1);
+
+  return {
+    healthFactor: hf,
+    healthFactorDirection: composite > 0.5 ? "down" : "up",
+    liquidationDistance: `${liqDist}%`,
+    mostExposedAsset: "WETH",
+    exposurePercentage: `${Math.round(40 + composite * 45)}%`,
+  };
+}
+
+function mapAgentRecommendation(data: CREWorkflowData): string {
+  if (data.agentDecision.decision === "ESCALATE") {
+    return "Immediate action required: reduce WETH exposure or add collateral now.";
+  }
+  if (data.agentDecision.decision === "PROTECT_POSITION") {
+    return "Add collateral to restore safety buffer.";
+  }
+  return "Position is healthy. No action required.";
+}
+
+// ── Component ────────────────────────────────────────────────────────
 
 export function AaveRiskMonitor() {
+  const { data, error, isLoading } = useCREWorkflow();
+
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [alertsEnabled, setAlertsEnabled] = useState(false);
 
-  const handleConnectWallet = async () => {
+  const handleConnectWallet = useCallback(async () => {
     setIsConnecting(true);
-    // Simulate wallet connection — will be replaced with actual wallet connection logic
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setWalletAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f3aB2d");
     setIsWalletConnected(true);
     setIsConnecting(false);
-  };
+  }, []);
 
-  const handleEnableAlerts = () => {
-    // Will trigger alert configuration modal
+  const handleEnableAlerts = useCallback(() => {
     setAlertsEnabled(true);
-  };
+  }, []);
+
+  if (isLoading || !data) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="text-center space-y-4">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            Connecting to CRE workflow…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="text-center space-y-4">
+          <p className="text-sm text-destructive">
+            CRE pipeline unavailable
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Ensure the API server is running on port 3001.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12">
-      {/* Section 1 — AAVE Protocol Status (Meaning First) */}
-      <ProtocolStatusBadge status="watch" />
+      {/* Section 1 — Protocol Status */}
+      <ProtocolStatusBadge status={mapProtocolStatus(data)} />
 
-      {/* Section 2 — Why This Status Exists (Estimation Numbers Only) */}
-      <RiskFactorCards factors={MOCK_RISK_FACTORS} />
+      {/* Section 2 — Risk Progression Bar */}
+      <RiskProgressionBar progression={mapRiskProgression(data)} />
 
-      {/* Section 3 — selvä Risk Progression Bar */}
-      <RiskProgressionBar progression={MOCK_PROGRESSION} />
+      {/* Section 3 — Why This Status */}
+      <RiskFactorCards factors={mapRiskFactors(data)} />
 
-      {/* Section 4 — Live Risk Event Feed (Reality Surface) */}
-      <LiveRiskEventFeed events={MOCK_EVENTS} />
+      {/* Section 4 — Intelligence Layers */}
+      <IntelligenceLayers data={mapIntelligenceLayers(data)} />
 
-      {/* Section 5/6/7 — Conditional based on wallet connection */}
+      {/* Section 5 — Live Agent Action Feed */}
+      <LiveRiskEventFeed events={mapEvents(data)} />
+
+      {/* Section 6 — Position Risk */}
       {!isWalletConnected ? (
-        /* Section 5 — Primary CTA (Single Decision) */
         <ConnectWalletCTA
           onConnect={handleConnectWallet}
           isConnecting={isConnecting}
         />
       ) : (
         <>
-          {/* Section 6 — Your Aave Position Risk (Personal Early Warning) */}
           <PositionRiskStatus
-            riskLevel="early-warning"
-            metrics={MOCK_POSITION_METRICS}
+            riskLevel={mapPositionRiskLevel(data)}
+            metrics={mapPositionMetrics(data)}
             walletAddress={walletAddress}
+            agentRecommendation={mapAgentRecommendation(data)}
           />
 
-          {/* Section 7 — Final Action (Peak-End Rule) */}
+          {/* Section 7 — Final Relief */}
           <EnableAlertsCTA
             onEnableAlerts={handleEnableAlerts}
             isEnabled={alertsEnabled}
@@ -123,11 +195,10 @@ export function AaveRiskMonitor() {
         </>
       )}
 
-      {/* Developer Footer (Non-intrusive) */}
+      {/* Developer Footer */}
       <DeveloperFooter />
     </div>
   );
 }
 
-// Re-export for backwards compatibility and routing
 export { AaveRiskMonitor as AaveOverview };

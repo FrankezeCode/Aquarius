@@ -10,6 +10,6 @@
     "declarationMap": true,
     "skipLibCheck": true
   },
-  "include": ["*.ts"],
+  "include": ["*.ts", "risk/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

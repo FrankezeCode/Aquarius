@@ -16,6 +16,7 @@ interface PositionRiskStatusProps {
   riskLevel: PositionRiskLevel;
   metrics: PositionMetrics;
   walletAddress: string;
+  agentRecommendation?: string;
   className?: string;
 }
 
@@ -76,6 +77,7 @@ export function PositionRiskStatus({
   riskLevel,
   metrics,
   walletAddress,
+  agentRecommendation,
   className,
 }: PositionRiskStatusProps) {
   const config = RISK_LEVEL_CONFIG[riskLevel];
@@ -144,16 +146,27 @@ export function PositionRiskStatus({
         {/* Most Exposed Asset */}
         <div className="rounded-xl border border-border bg-card/50 p-4 text-center">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Most Exposed Asset
+            Exposure Concentration
           </span>
           <p className="mt-2 text-2xl font-semibold text-foreground">
             {metrics.mostExposedAsset}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            ({metrics.exposurePercentage})
+            {metrics.exposurePercentage}
           </p>
         </div>
       </div>
+
+      {agentRecommendation && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Agent Recommendation
+          </span>
+          <p className="mt-2 text-sm text-foreground leading-relaxed">
+            &ldquo;{agentRecommendation}&rdquo;
+          </p>
+        </div>
+      )}
     </section>
   );
 }

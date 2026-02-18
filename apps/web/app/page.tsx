@@ -50,10 +50,10 @@ const Index = () => {
             {/* Headline */}
             <motion.h1
               variants={fadeInUp}
-              className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
             >
                Real-Time{" "}
-              <span className="aquarius-text-gradient">DeFi Risk & Protocol Intelligence</span>
+              <span className="aquarius-text-gradient">Protocol-Aware Risk Intelligence for Defi — in One Place.</span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -61,8 +61,7 @@ const Index = () => {
               variants={fadeInUp}
               className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             >
-               Monitor protocol health, account exposure, and on-chain events — starting with Aave.
-               Built for users, developers, and automation.
+             Monitor protocol-specific risk signals like health, account exposure, and on-chain events — starting with <span className="text-primary">Aave</span> — with AI-driven agents that trigger protective actions. Built for users, developers, and automation.
             </motion.p>
 
             {/* CTAs */}
@@ -92,12 +91,12 @@ const Index = () => {
             className="mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-12 text-sm text-muted-foreground"
           >
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
+              <Eye className="h-4 w-4 text-primary" />
               <span>On-chain & verifiable</span>
             </div>
             <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span>Transparent by default</span>
+              <Shield className="h-4 w-4 text-primary" />
+              <span>Protect positions before failure</span>
             </div>
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
