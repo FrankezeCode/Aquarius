@@ -15,7 +15,7 @@
  * handled by the application layer which reads the emitted domain event.
  */
 
-import { fetchPositionSnapshots, deriveChainMetrics } from "./signals.js";
+import { fetchPositionSnapshots, deriveChainMetrics, type AavePositionSnapshot } from "./signals.js";
 import { correlateSignals } from "./correlator.js";
 import { scoreRisk, type RiskScore, type AceRiskLevel } from "./scorer.js";
 import type { CrossChainRiskSignal } from "./domain-events.js";
@@ -53,20 +53,28 @@ const ACTION_MAP: Record<AceRiskLevel, MonitorAction> = {
  * Run the full risk-intelligence pipeline for a single chain and return
  * the monitoring result.
  *
+ * Accepts either:
+ *   - A pre-fetched positions array (from IMarketDataProvider)
+ *   - A numeric limit (legacy: fetches internally via mockPositions)
+ *
+ * When positions are injected, the monitor is pure domain with no I/O.
+ *
  * Pipeline:
- *   1. Fetch position snapshots (signals)
+ *   1. Use provided positions (or fetch if limit given)
  *   2. Derive aggregate chain metrics
  *   3. Correlate signals into composite assessment
  *   4. Score using ACE classification
  *   5. Determine action (observe / escalate / pause)
- *   6. If escalate or pause → dispatch CCIP stub
+ *   6. If escalate or pause → emit cross-chain domain event
  */
 export async function runMonitor(
   chainId: string,
-  positionLimit = 50
+  positionsOrLimit: AavePositionSnapshot[] | number = 50
 ): Promise<MonitorResult> {
-  // 1. Fetch signals
-  const positions = await fetchPositionSnapshots(chainId, positionLimit);
+  // 1. Resolve positions: injected array or legacy fetch
+  const positions = Array.isArray(positionsOrLimit)
+    ? positionsOrLimit
+    : await fetchPositionSnapshots(chainId, positionsOrLimit);
 
   // 2. Aggregate
   const metrics = deriveChainMetrics(chainId, positions);

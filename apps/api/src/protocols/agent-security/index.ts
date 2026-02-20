@@ -53,3 +53,14 @@ export {
   UniswapSecurityAdapter,
   LidoSecurityAdapter,
 } from "./adapters/index.js";
+
+// ── Runtime Isolation Guard ─────────────────────────────────────────
+
+export {
+  assertProtocolIsolation,
+  checkProtocolIsolation,
+  registerProtocolService,
+  isServiceInScope,
+  ProtocolIsolationViolation,
+  type ProtocolIsolationContext,
+} from "./runtime-guard.js";

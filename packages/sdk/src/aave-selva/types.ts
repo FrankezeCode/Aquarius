@@ -73,3 +73,25 @@ export interface AaveRiskApiResponse {
   globalRiskIndex: number;
   liquidationPressure: number;
 }
+
+// ── Projected HF Response ───────────────────────────────────────────
+
+/**
+ * Response from GET /api/v1/aave-risk/projected-hf/:user
+ *
+ * Predictive risk assessment for a specific user position.
+ */
+export interface ProjectedHFResponse {
+  user: string;
+  currentHF: number;
+  projectedHF: number;
+  blocksAhead: number;
+  confidence: number;
+  breachBlock: number | null;
+  riskVelocity: {
+    slope: number;
+    isAccelerating: boolean;
+  };
+  liquidationProbability: number;
+  timestamp: number;
+}

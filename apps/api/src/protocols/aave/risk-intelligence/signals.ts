@@ -50,7 +50,9 @@ export interface AaveChainMetrics {
   timestamp: number;
 }
 
-// ── Mock helpers (replace with on-chain adapters) ────────────────────
+// ── Mock helpers (DEPRECATED — use IMarketDataProvider adapters) ─────
+// Kept for backward compatibility with AaveMonitor legacy path.
+// New code should use createMarketDataProvider() from adapters/.
 
 function mockPositions(chainId: string, count: number): AavePositionSnapshot[] {
   const now = Date.now();
@@ -73,10 +75,9 @@ function mockPositions(chainId: string, count: number): AavePositionSnapshot[] {
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
- * Fetch position snapshots for a given chain.
- *
- * In production this calls the on-chain adapter layer; currently returns
- * deterministic mock data suitable for the local POC.
+ * @deprecated Use IMarketDataProvider.fetchPositionSnapshots() via
+ * createMarketDataProvider() instead. Kept for backward compatibility
+ * with the AaveMonitor legacy path.
  */
 export async function fetchPositionSnapshots(
   chainId: string,

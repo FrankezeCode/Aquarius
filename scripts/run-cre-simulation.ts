@@ -4,8 +4,12 @@
  * Thin wrapper around runCREWorkflow().
  * No duplicated logic. All orchestration lives in packages/domain/cre.
  *
+ * Provider is resolved by factory based on DATA_PROVIDER_MODE env var.
+ *
  * Usage:
- *   pnpm run:cre
+ *   pnpm run:cre                              # uses mock (default)
+ *   DATA_PROVIDER_MODE=tenderly pnpm run:cre  # uses Tenderly
+ *   DATA_PROVIDER_MODE=onchain pnpm run:cre   # uses mainnet RPC
  */
 
 import "dotenv/config";
@@ -13,12 +17,15 @@ import {
   runCREWorkflow,
   type CREWorkflowResult,
 } from "../packages/domain/cre/run-cre-workflow.js";
+import { createMarketDataProvider } from "../apps/api/src/adapters/providerFactory.js";
 
 function printResult(result: CREWorkflowResult): void {
   console.log("╔══════════════════════════════════════════════╗");
   console.log("║   Aquarius CRE Workflow — Live Pipeline      ║");
   console.log("╚══════════════════════════════════════════════╝\n");
 
+  const mode = process.env.DATA_PROVIDER_MODE ?? "mock";
+  console.log(`[CRE] Data Provider: ${mode.toUpperCase()}`);
   console.log(`[CRE] Protocol Status: ${result.protocolStatus.toUpperCase()}`);
   console.log(
     `[CRE] Risk Intelligence: level=${result.riskScore.level} composite=${result.riskScore.composite}`
@@ -73,8 +80,10 @@ function printResult(result: CREWorkflowResult): void {
 
 async function main() {
   const groqKey = process.env.GROQ_API_KEY;
+  const provider = createMarketDataProvider();
 
   const result = await runCREWorkflow({
+    provider,
     chainId: "ethereum",
     positionLimit: 50,
     enableLLM: !!groqKey,

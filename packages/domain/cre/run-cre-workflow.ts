@@ -23,7 +23,7 @@ import {
   type MonitorResult,
 } from "../../../apps/api/src/protocols/aave/risk-intelligence/monitor.js";
 import {
-  fetchChainMetrics,
+  deriveChainMetrics,
   type AaveChainMetrics,
 } from "../../../apps/api/src/protocols/aave/risk-intelligence/signals.js";
 import {
@@ -31,6 +31,7 @@ import {
   type AgentEvaluationResult,
 } from "../../../apps/api/src/protocols/aave/ai-agents/ai-risk-agent.js";
 import type { AceRiskLevel } from "../../../apps/api/src/protocols/aave/risk-intelligence/scorer.js";
+import type { IMarketDataProvider } from "../../../apps/api/src/domain/ports/IMarketDataProvider.js";
 
 // ── Result Types ─────────────────────────────────────────────────────
 
@@ -280,6 +281,8 @@ function computeConfidence(
 // ── Public API ───────────────────────────────────────────────────────
 
 export interface CREWorkflowOptions {
+  /** Injected data provider. If omitted, falls back to legacy fetch. */
+  provider?: IMarketDataProvider;
   chainId?: string;
   positionLimit?: number;
   enableLLM?: boolean;
@@ -296,6 +299,7 @@ export async function runCREWorkflow(
   options: CREWorkflowOptions = {}
 ): Promise<CREWorkflowResult> {
   const {
+    provider,
     chainId = "ethereum",
     positionLimit = 50,
     enableLLM = false,
@@ -307,10 +311,19 @@ export async function runCREWorkflow(
   // ── Layer 1: Risk Intelligence ──────────────────────────────────
   const riskStart = performance.now();
 
-  const [monitorResult, chainMetrics] = await Promise.all([
-    runMonitor(chainId, positionLimit),
-    fetchChainMetrics(chainId, positionLimit),
-  ]);
+  // Single fetch via injected provider (or legacy fallback)
+  let monitorResult: MonitorResult;
+  let chainMetrics: AaveChainMetrics;
+
+  if (provider) {
+    const positions = await provider.fetchPositionSnapshots(chainId, positionLimit);
+    chainMetrics = deriveChainMetrics(chainId, positions);
+    monitorResult = await runMonitor(chainId, positions);
+  } else {
+    // Legacy path: runMonitor fetches internally
+    monitorResult = await runMonitor(chainId, positionLimit);
+    chainMetrics = deriveChainMetrics(chainId, []);
+  }
 
   const riskLatency = Math.round(performance.now() - riskStart);
 

@@ -13,6 +13,9 @@ export { getRisk, guard } from "./risk.js";
 // Legacy (backward compatible)
 export { getAaveRiskSignals, getAaveMarketRisk } from "./risk.js";
 
+// Predictive risk
+export { getProjectedHF } from "./projected-hf.js";
+
 // Domain types
 export type {
   AaveRiskLevel,
@@ -21,4 +24,5 @@ export type {
   AaveRiskQuery,
   AaveRiskSnapshot,
   AaveRiskApiResponse,
+  ProjectedHFResponse,
 } from "./types.js";

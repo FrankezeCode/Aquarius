@@ -17,6 +17,7 @@ import { RiskQueryService } from "../../../protocols/shared/application/services
 import { Protocol } from "../../../protocols/shared/types/risk-api.types.js";
 import { createHealthRoute } from "./health.js";
 import { createLiquidationPressureRoute } from "./liquidation-pressure.js";
+import { createProjectedHFRoute } from "./projected-hf.js";
 
 /**
  * Singleton query service — shared across all requests.
@@ -37,4 +38,7 @@ export async function registerAaveRiskApiRoutes(
     createLiquidationPressureRoute(queryService, Protocol.AAVE),
     { prefix: "/liquidation-pressure" }
   );
+
+  // Predictive HF projection endpoint
+  await app.register(createProjectedHFRoute(), { prefix: "/projected-hf" });
 }
