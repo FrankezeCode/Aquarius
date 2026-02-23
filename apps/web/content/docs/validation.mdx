@@ -1,0 +1,156 @@
+---
+title: Validation & Testing
+description: End-to-end validation pipeline, test results, and failure handling strategies.
+section: Operations
+---
+
+## Validation Philosophy
+
+Aquarius does not ship untested infrastructure. Every component — from smart contracts to prediction models to API endpoints — is validated through a comprehensive 11-stage pipeline that exercises the entire production architecture on a Tenderly Virtual TestNet fork.
+
+## Full Validation Script
+
+Run the complete validation suite:
+
+```bash
+pnpm run run:full-validation
+```
+
+Supports dry-run mode when no Tenderly RPC is configured:
+
+```bash
+pnpm run run:full-validation -- --dry-run
+```
+
+### 11-Stage Pipeline
+
+| Stage | Description | Mode |
+|---|---|---|
+| 1 | Deploy 5 smart contracts (PolicyGuard, MitigationExecutor, BufferVault, AquaAgent, CCIPCoordinator) | On-chain |
+| 2 | Initialize contracts (vault configuration, agent registration, CCIP setup) | On-chain |
+| 3 | Create 3 test users with Aave V3 positions (varied collateral/debt ratios) | On-chain |
+| 4 | Simulate WSS events and populate Position Graph Store | Off-chain |
+| 5 | Run Prediction Engine (HF projection, risk velocity, liquidation probability, stress testing) | Off-chain |
+| 6 | CRE Workflow execution with agent security validation (protocol isolation checks) | Hybrid |
+| 7 | Dual-path execution: non-custodial repay + vault-backed injection | On-chain |
+| 8 | CCIP cross-chain risk propagation broadcast | On-chain |
+| 9 | Scheduler safety layer: circuit breaker and recovery manager | Off-chain |
+| 10 | API + SDK consistency validation | Off-chain |
+| 11 | Final state validation and comprehensive report generation | Hybrid |
+
+<Callout type="info" title="942 Lines of Validation">
+The validation script is 942 lines of TypeScript covering every system boundary. This is not a unit test suite — it is a production architecture validation.
+</Callout>
+
+## Test Scenarios
+
+### Synthetic User Profiles
+
+The validation creates three synthetic users with different risk profiles:
+
+| User | Collateral | Debt | Target HF | Expected Outcome |
+|---|---|---|---|---|
+| User A | 10 ETH | 5,000 USDC | ~1.5 | Healthy — no intervention |
+| User B | 5 ETH | 4,000 USDC | ~1.15 | At risk — warn + prepare mitigation |
+| User C | 3 ETH | 3,500 USDC | ~1.05 | Critical — auto-mitigation triggered |
+
+### Validation Checks Per User
+
+For each synthetic user, the validation confirms:
+
+1. **Position creation** — Aave V3 supply and borrow transactions succeed
+2. **Health factor accuracy** — Computed HF matches on-chain `getUserAccountData()`
+3. **Risk classification** — Severity level matches expected tier
+4. **Mitigation trigger** — Critical users trigger agent execution; healthy users do not
+5. **Post-mitigation HF** — Health factor improves after mitigation
+
+### Agent Security Validation
+
+Stage 6 specifically validates the agent's security constraints:
+
+- **Protocol isolation** — Agent decisions for Aave do not leak into Uniswap or Lido contexts
+- **Bounded execution** — Agent cannot exceed approved spending limits
+- **Action whitelist** — Only pre-approved action types are accepted
+- **Policy enforcement** — PolicyGuard rejects actions that exceed daily limits or single-action caps
+
+### Dual-Path Execution Results
+
+Stage 7 validates both mitigation pathways:
+
+**Non-Custodial Path:**
+```
+✓ User B approved 1000 USDC spending limit
+✓ MitigationExecutor.repayOnBehalf() called with 500 USDC
+✓ PolicyGuard verified: amount < maxSingleActionUsd
+✓ Post-repay HF improved from 1.15 → 1.35
+```
+
+**Vault-Backed Path:**
+```
+✓ BufferVault initialized with 10,000 USDC
+✓ User C registered for vault protection
+✓ BufferVault.injectLiquidity() called with 800 USDC
+✓ Post-injection HF improved from 1.05 → 1.28
+✓ Vault shares adjusted proportionally
+```
+
+## Failure Handling
+
+### Tenderly Quota Exhaustion
+
+When Tenderly API quota is exhausted, the validation script falls back to dry-run mode:
+
+- All on-chain stages are skipped
+- Off-chain stages (prediction engine, CRE workflow, scheduler) execute normally
+- Results are marked as `[DRY-RUN]` in the report
+- No false passes — dry-run results are explicitly flagged
+
+### Deterministic Fallback
+
+If any non-deterministic component fails (e.g., LLM timeout), the system falls back to the deterministic path:
+
+```typescript
+// Agent fallback on LLM failure
+const fallback: AgentDecision = {
+  action: "OBSERVE_ONLY",
+  confidence: 0.5,
+  reason: "LLM unavailable — falling back to safe default",
+  severity_override: null,
+};
+```
+
+The deterministic fallback always chooses the safest option: observe rather than act on uncertain data.
+
+### Error Categories
+
+| Category | Handling | Recovery |
+|---|---|---|
+| RPC failure | Retry with exponential backoff | Fall back to dry-run after 3 attempts |
+| Contract deployment failure | Abort on-chain stages | Report partial results |
+| Prediction engine error | Log and continue | Use last-known-good values |
+| LLM timeout | Use deterministic fallback | `OBSERVE_ONLY` with 0.5 confidence |
+| WSS disconnection | Circuit breaker opens | Recovery manager initiates reconnection |
+
+## Additional Validation Commands
+
+```bash
+# Run the AI Risk Agent test suite (3 scenarios)
+pnpm run run:agent
+
+# Run CRE simulation only
+pnpm run run:cre
+
+# Run CCC (Confidential Compute) demo
+pnpm run run:ccc-demo
+
+# Compile smart contracts
+pnpm run compile:contracts
+```
+
+## CI/CD Integration (Planned)
+
+The validation pipeline will be integrated into CI/CD as a mandatory gate:
+
+1. **Pre-merge** — Off-chain validation (stages 4-6, 9-10) runs on every PR
+2. **Pre-deploy** — Full validation (all 11 stages) runs before production deployment
+3. **Post-deploy** — Smoke tests verify deployed contracts match expected state

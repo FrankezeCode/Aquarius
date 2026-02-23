@@ -54,6 +54,11 @@ export interface RiskSnapshot {
   sampleSize: number;
   /** Unix ms. */
   timestamp: number;
+  /**
+   * Current SELVA escalation stage. When provided, agent decisions
+   * are driven by the state machine instead of raw composite thresholds.
+   */
+  escalationStage?: "info" | "confirm" | "invalidate";
 }
 
 /**
@@ -105,19 +110,19 @@ export class AIRiskAgent {
   /**
    * Evaluate a risk snapshot and request actions if warranted.
    *
-   * Synchronous — all action dispatches are non-blocking
+   * Synchronous -- all action dispatches are non-blocking
    * (CRE adapter uses queueMicrotask internally).
    *
-   * Decision tree:
-   *   1. Check for black-swan conditions → PROTECT_POSITION
-   *   2. composite > 0.75 → ESCALATE
-   *   3. composite > 0.50 → NOTIFY
-   *   4. Otherwise → no action (observe only)
+   * Decision tree (SELVA state-machine driven):
+   *   1. Check for black-swan conditions -> PROTECT_POSITION (always)
+   *   2. escalationStage === "invalidate" -> ESCALATE
+   *   3. escalationStage === "confirm" -> PROTECT_POSITION
+   *   4. escalationStage === "info" or absent -> fallback to composite thresholds
    */
   evaluate(snapshot: RiskSnapshot): AgentEvaluationResult {
     const actionsRequested: string[] = [];
 
-    // ── Black swan detection (pure function) ─────────────────────
+    // ── Black swan detection (pure function, always checked) ────
     const bsSnapshot: BlackSwanSnapshot = {
       chainId: snapshot.chainId,
       avgHealthFactor: snapshot.avgHealthFactor,
@@ -128,7 +133,6 @@ export class AIRiskAgent {
     const blackSwanDetected = detectBlackSwan(bsSnapshot);
 
     if (blackSwanDetected) {
-      // Black swan → protect positions immediately
       const result = requestAction({
         agentId: this.agentId,
         scope: this.scope,
@@ -146,48 +150,56 @@ export class AIRiskAgent {
       }
     }
 
-    // ── High risk → escalate ─────────────────────────────────────
-    if (snapshot.riskScore > ESCALATION_THRESHOLD) {
+    // ── SELVA stage-driven decisions ─────────────────────────────
+    const stage = snapshot.escalationStage;
+
+    if (stage === "invalidate") {
       const result = requestAction({
         agentId: this.agentId,
         scope: this.scope,
         actionType: "ESCALATE",
         chainId: snapshot.chainId,
         composite: snapshot.riskScore,
-        metadata: {
-          reason: "composite-above-threshold",
-          threshold: ESCALATION_THRESHOLD,
-        },
+        metadata: { reason: "selva-invalidate", stage },
       });
-      if (result.dispatched) {
-        actionsRequested.push("ESCALATE");
-      }
-    }
-
-    // ── Moderate risk → notify ───────────────────────────────────
-    if (
-      snapshot.riskScore > NOTIFICATION_THRESHOLD &&
-      snapshot.riskScore <= ESCALATION_THRESHOLD
-    ) {
+      if (result.dispatched) actionsRequested.push("ESCALATE");
+    } else if (stage === "confirm") {
       const result = requestAction({
         agentId: this.agentId,
         scope: this.scope,
-        actionType: "NOTIFY",
+        actionType: "PROTECT_POSITION",
         chainId: snapshot.chainId,
         composite: snapshot.riskScore,
-        metadata: {
-          reason: "composite-above-notification-threshold",
-          threshold: NOTIFICATION_THRESHOLD,
-        },
+        metadata: { reason: "selva-confirm", stage },
       });
-      if (result.dispatched) {
-        actionsRequested.push("NOTIFY");
+      if (result.dispatched) actionsRequested.push("PROTECT_POSITION");
+    } else if (!stage) {
+      // Fallback: no state machine available, use legacy composite thresholds
+      if (snapshot.riskScore > ESCALATION_THRESHOLD) {
+        const result = requestAction({
+          agentId: this.agentId,
+          scope: this.scope,
+          actionType: "ESCALATE",
+          chainId: snapshot.chainId,
+          composite: snapshot.riskScore,
+          metadata: { reason: "composite-above-threshold", threshold: ESCALATION_THRESHOLD },
+        });
+        if (result.dispatched) actionsRequested.push("ESCALATE");
+      } else if (snapshot.riskScore > NOTIFICATION_THRESHOLD) {
+        const result = requestAction({
+          agentId: this.agentId,
+          scope: this.scope,
+          actionType: "NOTIFY",
+          chainId: snapshot.chainId,
+          composite: snapshot.riskScore,
+          metadata: { reason: "composite-above-notification-threshold", threshold: NOTIFICATION_THRESHOLD },
+        });
+        if (result.dispatched) actionsRequested.push("NOTIFY");
       }
     }
 
-    // ── Audit log ────────────────────────────────────────────────
     console.info(
-      `[ai-risk-agent] agent=${this.agentId} chain=${snapshot.chainId} score=${snapshot.riskScore} actions=[${actionsRequested.join(",")}] blackSwan=${blackSwanDetected}`
+      `[ai-risk-agent] agent=${this.agentId} chain=${snapshot.chainId} stage=${stage ?? "none"} score=${snapshot.riskScore} actions=[${actionsRequested.join(",")}] blackSwan=${blackSwanDetected}`
     );
 
     return {

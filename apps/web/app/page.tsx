@@ -29,7 +29,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
         {/* Background Effects */}
-        <div className="absolute inset-0 aquarius-grid-bg opacity-30" />
+        <div className="absolute inset-0 aquarius-grid-bg opacity-50" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
 
         <div className="container mx-auto px-4 relative z-10">
@@ -47,21 +47,29 @@ const Index = () => {
               </span>
             </motion.div>
 
-            {/* Headline */}
+            {/* Headline — wider than max-w-4xl so text-9xl fits on one line */}
             <motion.h1
               variants={fadeInUp}
-              className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
+              className="hero-laser-container text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter mb-6 -mx-8 md:-mx-16 lg:-mx-24"
             >
-               Real-Time{" "}
-              <span className="aquarius-text-gradient">Protocol-Aware Risk Intelligence for Defi — in One Place.</span>
+              <span className="block">Protection at</span>
+              <span className="block hero-chrome-gradient">Hyper-Speed.</span>
             </motion.h1>
 
-            {/* Subheadline */}
+            {/* Sub-hero heading */}
+            <motion.h2
+              variants={fadeInUp}
+              className="text-xl md:text-2xl font-semibold mb-4 max-w-2xl mx-auto"
+            >
+              Real-time, protocol-aware risk intelligence for DeFi.
+            </motion.h2>
+
+            {/* Sub-hero body */}
             <motion.p
               variants={fadeInUp}
               className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             >
-             Monitor protocol-specific risk signals like health, account exposure, and on-chain events — starting with <span className="text-primary">Aave</span> — with AI-driven agents that trigger protective actions. Built for users, developers, and automation.
+              Continuously monitors health factors, account exposure, and on-chain stress signals — starting with Aave — and escalates before liquidation risk becomes inevitable.
             </motion.p>
 
             {/* CTAs */}
@@ -71,13 +79,13 @@ const Index = () => {
             >
               <Link href="/protocol/aave">
                 <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-sm gap-2 text-base px-8">
-                  Monitor Aave
+                  Monitor Aave Risk
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/how-it-works">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8">
-                  Create Account
+                  Documentation
                 </Button>
               </Link>
             </motion.div>

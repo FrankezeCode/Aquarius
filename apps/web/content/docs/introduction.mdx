@@ -1,0 +1,83 @@
+---
+title: What is Aquarius?
+description: Protocol-aware DeFi risk intelligence infrastructure built on Chainlink CRE.
+section: Getting Started
+---
+
+## Overview
+
+Aquarius is a **protocol-aware risk intelligence layer** for decentralized finance. It extends Chainlink's horizontal infrastructure — CRE, CCIP, and Confidential Compute — with vertical financial intelligence purpose-built for DeFi position protection.
+
+<Callout type="info" title="Core Principle">
+Chainlink executes. Aquarius decides and protects.
+</Callout>
+
+Where Chainlink CRE provides generic, protocol-agnostic execution infrastructure, Aquarius provides the **risk interpretation**, **escalation logic**, and **mitigation pathways** that make that execution financially meaningful.
+
+## The Problem
+
+DeFi risk is not generic. Protocols like Aave, Uniswap, and Curve Finance each have:
+
+- **Unique liquidation mechanics** — Aave's health factor model differs fundamentally from Compound's borrowing capacity checks
+- **Unique risk thresholds** — A health factor of 1.2 on Aave means something entirely different from an impermanent loss ratio on Uniswap
+- **Unique invariant assumptions** — Protocol-specific state transitions that require domain-specific interpretation
+
+Chainlink CRE is protocol-agnostic by design. But risk is protocol-specific. **That gap is Aquarius.**
+
+### What Exists Today
+
+| Layer | Status |
+|---|---|
+| Price feeds | Chainlink oracles — solved |
+| Execution infrastructure | Chainlink CRE — solved |
+| Cross-chain messaging | Chainlink CCIP — solved |
+| Protocol-specific risk interpretation | **Missing — Aquarius fills this** |
+
+### The Cost of the Gap
+
+Without protocol-aware risk intelligence:
+
+1. **Liquidations happen reactively** — users discover risk too late
+2. **Mitigation is manual** — requiring constant monitoring and gas scrambles
+3. **Institutional adoption stalls** — TradFi-grade capital requires TradFi-grade protection
+4. **Cross-chain risk propagates silently** — a liquidation cascade on Arbitrum has no early warning system for the same position on Ethereum
+
+## How Aquarius Works
+
+Aquarius operates as a three-layer system:
+
+1. **Risk Intelligence Engine** — Continuously monitors protocol state, computes risk metrics, and emits structured risk signals with severity classifications
+2. **Aqua Agent** — Executes pre-approved mitigation actions through two pathways: non-custodial (user-approved bounded execution) and vault-backed (pooled capital protection)
+3. **Escalation Engine** — Implements an Observe → Warn → Act model that prevents premature execution while ensuring timely response
+
+```
+┌─────────────────────────────────┐
+│      User / Protocol / DAO      │
+└──────────────┬──────────────────┘
+               │
+┌──────────────▼──────────────────┐
+│   Aquarius Risk Engine          │
+│   Protocol-Aware Intelligence   │
+└──────────────┬──────────────────┘
+               │
+┌──────────────▼──────────────────┐
+│   Aqua Agent (Execution Layer)  │
+│   Non-Custodial + Vault-Backed  │
+└──────────────┬──────────────────┘
+               │
+┌──────────────▼──────────────────┐
+│   Chainlink CRE + CCIP + CCC   │
+└──────────────┬──────────────────┘
+               │
+┌──────────────▼──────────────────┐
+│     Blockchain (Aave V3)        │
+└─────────────────────────────────┘
+```
+
+## Who Aquarius Serves
+
+- **DeFi users** with leveraged positions who need automated protection
+- **Protocol teams** who want to offer integrated safety layers to their users
+- **Institutional desks** that require TradFi-grade capital protection before deploying on-chain
+- **DAOs** managing treasury positions across multiple protocols
+- **Bot operators** who need structured risk signals for automated strategies

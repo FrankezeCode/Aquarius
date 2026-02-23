@@ -1,0 +1,109 @@
+---
+title: Roadmap
+description: Development phases, milestones, and future direction for Aquarius.
+section: Operations
+---
+
+## Development Phases
+
+Aquarius development follows a phased approach, expanding from a single-protocol proof of concept to a multi-chain, multi-protocol protection infrastructure.
+
+## Short-Term
+
+Focus: **Deepen Aave coverage and prove the architecture.**
+
+| Milestone | Description | Status |
+|---|---|---|
+| Aave V3 full integration | Complete risk monitoring, mitigation, and validation | Done |
+| BufferVault deployment | Pooled capital protection with share mechanics | Done |
+| Dual-path mitigation | Non-custodial and vault-backed pathways | Done |
+| 11-stage validation | End-to-end architecture validation pipeline | Done |
+| AI Risk Agent | Deterministic + LLM-augmented decision engine | Done |
+| Tenderly simulation | Fork-based testing and dry-run validation | Done |
+| Uniswap LP risk model | Impermanent loss monitoring and LP position risk scoring | In Progress |
+| Liquidation prediction | ML-assisted health factor forecasting | In Progress |
+
+## Mid-Term
+
+Focus: **Multi-chain and multi-protocol expansion.**
+
+| Milestone | Description |
+|---|---|
+| Multi-chain risk propagation | CCIP-based cross-chain risk broadcasting with automated response |
+| Cross-protocol monitoring | Detect correlated risk across Aave, Uniswap, Compound, and Lido positions |
+| Institutional dashboard | Dedicated interface for fund managers and treasury operators |
+| Protocol SDK | Enable any protocol to integrate Aquarius risk intelligence natively |
+| Compound V3 adapter | Risk monitoring and mitigation for Compound lending positions |
+| Lido staking risk | Validator exposure, slashing risk, and withdrawal delay monitoring |
+| Advanced stress testing | Multi-asset correlation-aware scenario simulation |
+
+## Long-Term
+
+Focus: **Become the standard protection layer for on-chain finance.**
+
+| Milestone | Description |
+|---|---|
+| TradFi-grade capital protection | Institutional-quality risk management meeting regulatory expectations |
+| RWA monitoring | Real World Asset risk assessment and protection |
+| Compliance-aware escalation | Jurisdiction-sensitive risk response for regulated entities |
+| Formal verification | Mathematical proofs for critical contract logic |
+| Decentralized governance | Community-driven protocol parameters and upgrade proposals |
+| Insurance integration | Connect vault protection with on-chain insurance protocols |
+
+## Token Model
+
+### AQUA Token
+
+The AQUA token serves three functions within the Aquarius ecosystem:
+
+| Function | Description |
+|---|---|
+| Governance | Vote on protocol parameters, risk thresholds, and upgrade proposals |
+| Staking | Stake AQUA to participate in risk validation and earn protocol fees |
+| Incentives | Earn AQUA for providing vault liquidity and participating in governance |
+
+### Vault Tokens (aqShares)
+
+Vault tokens represent participation in the BufferVault:
+
+| Property | Description |
+|---|---|
+| Claims | Proportional claim on underlying vault assets |
+| Yield-bearing | Value increases as vault earns protection fees |
+| Mitigation backing | Represents contribution to the collective protection pool |
+| Composable | Future: ERC-20 wrapping for DeFi composability |
+
+## Known Limitations
+
+Transparency about current limitations demonstrates engineering maturity:
+
+| Limitation | Context | Mitigation |
+|---|---|---|
+| Aave-first | Only Aave V3 is fully integrated | Protocol adapter architecture enables straightforward expansion |
+| Simulation coverage | Not all edge cases are covered | Expanding stress test scenarios continuously |
+| No formal audits | Smart contracts not yet audited | 11-stage validation pipeline provides interim assurance; formal audit planned |
+| Cross-chain observe-only | CCIP integration is informational only | Mitigation execution across chains is on the roadmap |
+| Single LLM provider | Groq with llama-3.3-70b-versatile | LLM layer is advisory and non-blocking; provider-agnostic design allows switching |
+
+## Future Research
+
+Active research areas that will inform future development:
+
+### ML-Driven Liquidation Forecasting
+
+Replace linear HF projection with machine learning models trained on historical liquidation data. Target: improve prediction accuracy from ~85% to ~95% confidence at 100-block horizons.
+
+### Correlated Asset Stress Modeling
+
+Current stress tests treat assets independently. Future models will capture correlations — e.g., ETH and stETH moving together during a depegging event, or broad market crashes affecting all collateral simultaneously.
+
+### Vault Capital Efficiency Optimization
+
+Research optimal reserve ratios and injection strategies to maximize capital efficiency while maintaining sufficient liquidity for mitigation events. Includes game-theoretic analysis of depositor incentives.
+
+### Formal Verification
+
+Apply formal methods to critical smart contract logic:
+- Prove that vault share calculations are always proportional
+- Prove that PolicyGuard bounds are never bypassed
+- Verify that the circuit breaker state machine has no deadlocks

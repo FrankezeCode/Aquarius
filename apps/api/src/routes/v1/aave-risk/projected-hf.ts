@@ -74,6 +74,23 @@ export function createProjectedHFRoute() {
             : 0;
           const liqProb = Math.min(1.0, Math.max(0, proximityScore * 0.4 + trajectoryScore * 0.6));
 
+          // Price drop to liquidation: how much collateral value can drop before HF = 1.0
+          const priceDropToLiquidation = parsed.healthFactor > 1.0
+            ? Math.round((1 - 1.0 / parsed.healthFactor) * 10000) / 100
+            : 0;
+
+          const interpretation = parsed.healthFactor < 1.2
+            ? `Critical: ${priceDropToLiquidation}% price drop triggers liquidation. HF declining.`
+            : parsed.healthFactor < 1.8
+              ? `Moderate buffer: ${priceDropToLiquidation}% drop to liquidation. Monitor volatility.`
+              : `Healthy buffer: ${priceDropToLiquidation}% drop to liquidation.`;
+
+          const action = parsed.healthFactor < 1.2
+            ? "Add collateral immediately or reduce debt."
+            : parsed.healthFactor < 1.8
+              ? "Consider adding collateral if volatility regime is elevated."
+              : "No action required.";
+
           return reply.send({
             user,
             currentHF: parsed.healthFactor,
@@ -81,8 +98,12 @@ export function createProjectedHFRoute() {
             blocksAhead,
             confidence,
             breachBlock,
+            liquidationThreshold: parsed.liquidationThreshold ?? null,
+            priceDropToLiquidation,
             riskVelocity: { slope, isAccelerating },
             liquidationProbability: Math.round(liqProb * 10000) / 10000,
+            interpretation,
+            action,
             timestamp: Date.now(),
           });
         } catch (err) {

@@ -1,0 +1,129 @@
+---
+title: BufferVault
+description: Pooled capital vault for institutional-grade automated position protection.
+section: Agents & Execution
+---
+
+## Purpose
+
+The BufferVault is Aquarius's pooled capital protection mechanism. It solves a critical problem in DeFi risk mitigation: **when a position needs protection, the capital to protect it must already be available.**
+
+In traditional DeFi, users facing liquidation must manually source funds, pay gas, and execute transactions under time pressure. The BufferVault eliminates this by pre-positioning mitigation capital in a shared pool that the Aqua Agent can draw from instantly.
+
+## Contract Architecture
+
+`BufferVault.sol` is a share-based vault that integrates directly with Aave V3:
+
+```solidity
+contract BufferVault {
+    IERC20 public asset;         // Underlying collateral token
+    IPool public pool;           // Aave V3 Pool
+    address public agent;        // Authorized Aqua Agent
+
+    mapping(address => uint256) public aqShares;
+    uint256 public totalShares;
+
+    function deposit(uint256 amount) external returns (uint256 shares);
+    function withdraw(uint256 shares) external returns (uint256 amount);
+    function injectLiquidity(
+        address beneficiary,
+        address debtAsset,
+        uint256 amount
+    ) external onlyAgent;
+}
+```
+
+## Deposit and Share Mechanics
+
+When a user deposits into the vault, they receive `aqShares` proportional to their contribution relative to the total pool:
+
+```
+If totalShares == 0:
+  shares = depositAmount
+
+Otherwise:
+  shares = (depositAmount * totalShares) / totalAssets
+```
+
+This ensures that:
+- Early depositors receive shares at a 1:1 ratio
+- Subsequent depositors receive shares proportional to the current pool value
+- Share dilution is fair and transparent
+
+### Withdrawal
+
+Users can withdraw their proportional share of the vault at any time:
+
+```
+withdrawAmount = (userShares * totalAssets) / totalShares
+```
+
+<Callout type="warning" title="Withdrawal Availability">
+Vault withdrawals may be temporarily limited during active mitigation events to prevent pool depletion. This constraint ensures that mitigation capital remains available when needed.
+</Callout>
+
+## Liquidity Injection
+
+When the Aqua Agent detects a critical risk event and selects vault-backed mitigation, it calls `injectLiquidity()`:
+
+```solidity
+function injectLiquidity(
+    address beneficiary,
+    address debtAsset,
+    uint256 amount
+) external onlyAgent {
+    asset.approve(address(pool), amount);
+    pool.repay(debtAsset, amount, 2, beneficiary);
+    emit LiquidityInjected(beneficiary, debtAsset, amount);
+}
+```
+
+This function:
+1. Approves the Aave V3 Pool to spend vault assets
+2. Repays the beneficiary's debt using pooled reserves
+3. Emits an auditable event for tracking
+
+The `onlyAgent` modifier ensures that only the registered Aqua Agent can trigger liquidity injection. No other address — including vault depositors — can initiate this operation.
+
+## Vault Token Model
+
+`aqShares` represent:
+
+| Property | Description |
+|---|---|
+| Claims on pool | Each share represents a proportional claim on the underlying vault assets |
+| Yield-bearing | As the vault earns protocol fees or incentives, share value increases |
+| Mitigation backing | Shares represent participation in the collective protection pool |
+| Transferable | Shares can be transferred between addresses (future: ERC-20 wrapping) |
+
+## Risk Considerations
+
+### Pool Depletion
+
+If the vault processes multiple simultaneous mitigation events, the available capital may be temporarily reduced. Aquarius mitigates this through:
+
+- **Injection caps** — Each mitigation event has a maximum injection amount
+- **Queue ordering** — Mitigation requests are processed in severity order
+- **Reserve ratio** — A configurable minimum reserve percentage is maintained
+
+### Vault Isolation
+
+The BufferVault is isolated from other Aquarius contracts:
+
+- Vault funds cannot be redirected to the Mitigation Executor
+- The Aqua Agent can only call `injectLiquidity()`, not `withdraw()`
+- Vault state is independent of the Position Graph Store
+
+<Callout type="info" title="Institutional Design">
+The vault architecture is designed for institutional participation. A fund manager can deposit treasury assets once and rely on automated protection without ongoing operational overhead.
+</Callout>
+
+## Integration with CRE Workflow
+
+The CRE workflow selects vault-backed mitigation when:
+
+1. The at-risk position does not have sufficient non-custodial approvals
+2. The vault has sufficient liquidity for the required mitigation amount
+3. The position qualifies for vault protection (based on registration and eligibility)
+
+The decision is deterministic — no manual approval is required once the position is registered for vault protection.

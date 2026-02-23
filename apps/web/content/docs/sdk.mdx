@@ -1,0 +1,248 @@
+---
+title: SDK Usage
+description: Integrate Aquarius risk intelligence into your application using the TypeScript SDK.
+section: Developer Guide
+---
+
+## Overview
+
+The Aquarius SDK provides a TypeScript-first interface for consuming risk intelligence, managing protocol connections, and integrating agent-driven decision making into your application.
+
+## Installation
+
+```bash
+pnpm add @aquarius/sdk
+```
+
+## Quick Start
+
+### Creating a Client
+
+```typescript
+import { createClient } from "@aquarius/sdk";
+
+const client = createClient({
+  baseUrl: "https://api.aquarius.finance",
+});
+
+const response = await client.fetch("/v1/aave-risk/health/ethereum");
+const data = await response.json();
+// → { protocol: "aave", chain: "ethereum", globalRiskIndex: 42, ... }
+```
+
+### Using the Provider
+
+The `AquariusProvider` wraps the base client with protocol-aware routing and timeout handling:
+
+```typescript
+import { createProvider } from "@aquarius/sdk";
+
+const provider = createProvider({
+  baseUrl: "https://api.aquarius.finance",
+  timeoutMs: 5000,
+});
+```
+
+## Protocol Adapters
+
+Each supported protocol has a dedicated adapter with typed risk snapshots:
+
+### Aave
+
+```typescript
+import { AaveRiskSnapshot } from "@aquarius/sdk/aave-selva";
+
+interface AaveRiskSnapshot {
+  protocol: "aave";
+  chain: string;
+  riskScore: number;
+  severity: "low" | "medium" | "high" | "critical";
+  healthFactor: number;
+  liquidationThreshold: number;
+  borrowBalance: number;
+  collateralBalance: number;
+}
+```
+
+The Aave module also provides health factor projection:
+
+```typescript
+import { projectHF } from "@aquarius/sdk/aave-selva";
+
+const projection = projectHF({
+  currentHF: 1.25,
+  oracleVelocity: -0.002,
+  collateralBeta: 1.1,
+  blocksAhead: 100,
+});
+// → { projectedHF: 1.03, confidence: 0.82, breachBlock: 14250050 }
+```
+
+### Uniswap
+
+```typescript
+import { UniswapRiskSnapshot } from "@aquarius/sdk/uniswap-selva";
+
+interface UniswapRiskSnapshot {
+  protocol: "uniswap";
+  chain: string;
+  riskScore: number;
+  severity: "low" | "medium" | "high" | "critical";
+  impermanentLoss: number;
+  liquiditySkew: number;
+  feeAccrualRate: number;
+}
+```
+
+### Lido
+
+```typescript
+import { LidoRiskSnapshot } from "@aquarius/sdk/lido-selva";
+
+interface LidoRiskSnapshot {
+  protocol: "lido";
+  chain: string;
+  riskScore: number;
+  severity: "low" | "medium" | "high" | "critical";
+  validatorExposure: number;
+  slashingRisk: number;
+  withdrawalDelay: number;
+}
+```
+
+## AI Risk Agent
+
+The SDK includes a deterministic AI Risk Agent that evaluates risk signals and produces structured decisions:
+
+```typescript
+import type { AgentDecision } from "@aquarius/sdk/agent";
+
+interface AgentDecision {
+  action: "OK" | "ESCALATE" | "OBSERVE_ONLY";
+  confidence: number;  // 0-1
+  reason: string;      // max 200 characters
+  severity_override?: "low" | "medium" | "high" | "critical" | null;
+}
+```
+
+### Decision Rules
+
+The agent follows deterministic decision rules:
+
+| Condition | Decision |
+|---|---|
+| Critical severity, high liquidation pressure | `ESCALATE` |
+| Accelerating HF degradation below threshold | `ESCALATE` |
+| Elevated but non-critical risk | `OBSERVE_ONLY` |
+| Low risk score, low/medium severity | `OK` |
+
+### LLM Layer
+
+An optional LLM reasoning layer (Groq, `llama-3.3-70b-versatile`) provides additional context:
+
+```typescript
+import { AquariusLLMAgent } from "@aquarius/sdk/agent";
+
+const llmAgent = new AquariusLLMAgent();
+const reasoning = await llmAgent.evaluate(riskSnapshot);
+// → { action: "ESCALATE", confidence: 0.91, reason: "HF declining..." }
+```
+
+<Callout type="warning" title="Non-Blocking">
+The LLM layer runs asynchronously and never blocks the deterministic decision path. It provides advisory context only.
+</Callout>
+
+### Validation Schema
+
+All agent decisions are validated with Zod before being processed:
+
+```typescript
+import { AgentDecisionSchema } from "@aquarius/sdk/agent";
+
+const parsed = AgentDecisionSchema.parse(rawDecision);
+// Throws ZodError if the decision doesn't match expected shape
+```
+
+## Runtime Engine
+
+The SDK includes a runtime engine for managing selva (self-validating) protocol contexts:
+
+```typescript
+import { SelvaRuntime } from "@aquarius/sdk/runtime";
+```
+
+Key runtime components:
+
+| Module | Purpose |
+|---|---|
+| `limiter` | Rate limiting for API calls and stream subscriptions |
+| `policy` | Execution policy enforcement |
+| `store` | Runtime state management |
+| `strategy` | Mitigation strategy selection |
+| `errors` | Typed error handling |
+
+## Integration Patterns
+
+### For Protocol Teams
+
+Embed Aquarius risk intelligence directly into your protocol's UI:
+
+```typescript
+const client = createClient({ baseUrl: "..." });
+
+async function getRiskForUser(address: string) {
+  const res = await client.fetch(`/v1/aave-risk/projected-hf/${address}`);
+  return res.json();
+}
+```
+
+### For Bot Operators
+
+Consume risk signals for automated trading strategies:
+
+```typescript
+const client = createClient({ baseUrl: "..." });
+
+async function monitorRisk(chain: string) {
+  const res = await client.fetch(`/v1/aave-risk/health/${chain}`);
+  const data = await res.json();
+
+  if (data.globalRiskIndex > 75) {
+    // Execute defensive strategy
+  }
+}
+```
+
+### For DAOs
+
+Monitor treasury positions across protocols:
+
+```typescript
+const chains = ["ethereum", "arbitrum", "base"];
+
+const risks = await Promise.all(
+  chains.map(async (chain) => {
+    const res = await client.fetch(`/v1/aave-risk/health/${chain}`);
+    return res.json();
+  })
+);
+
+const highRiskChains = risks.filter((r) => r.globalRiskIndex > 50);
+```
+
+### For Institutional Integrators
+
+Use the full SDK stack with agent reasoning:
+
+```typescript
+import { createProvider } from "@aquarius/sdk";
+import { AquariusLLMAgent } from "@aquarius/sdk/agent";
+
+const provider = createProvider({ baseUrl: "...", timeoutMs: 10000 });
+const agent = new AquariusLLMAgent();
+
+// 1. Fetch risk data
+// 2. Run deterministic evaluation
+// 3. Optionally augment with LLM reasoning
+// 4. Execute mitigation if ESCALATE
+```

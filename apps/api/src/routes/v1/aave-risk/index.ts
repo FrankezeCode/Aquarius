@@ -18,6 +18,10 @@ import { Protocol } from "../../../protocols/shared/types/risk-api.types.js";
 import { createHealthRoute } from "./health.js";
 import { createLiquidationPressureRoute } from "./liquidation-pressure.js";
 import { createProjectedHFRoute } from "./projected-hf.js";
+import { createProtocolHealthRoute } from "./protocol-health.js";
+import { createUserHealthRoute } from "./user-health.js";
+import { createActionableMetricsRoute } from "./actionable-metrics.js";
+import { createStressTestRoute } from "./stress-test.js";
 
 /**
  * Singleton query service — shared across all requests.
@@ -41,4 +45,12 @@ export async function registerAaveRiskApiRoutes(
 
   // Predictive HF projection endpoint
   await app.register(createProjectedHFRoute(), { prefix: "/projected-hf" });
+
+  // Health Score endpoints
+  await app.register(createProtocolHealthRoute(), { prefix: "/protocol-health" });
+  await app.register(createUserHealthRoute(), { prefix: "/user-health" });
+
+  // Actionable metrics and stress testing
+  await app.register(createActionableMetricsRoute(), { prefix: "/actionable-metrics" });
+  await app.register(createStressTestRoute(), { prefix: "/stress-test" });
 }

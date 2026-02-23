@@ -32,6 +32,8 @@ import {
 } from "../../../apps/api/src/protocols/aave/ai-agents/ai-risk-agent.js";
 import type { AceRiskLevel } from "../../../apps/api/src/protocols/aave/risk-intelligence/scorer.js";
 import type { IMarketDataProvider } from "../../../apps/api/src/domain/ports/IMarketDataProvider.js";
+import { getEscalationMachine } from "../../../apps/api/src/protocols/aave/risk-intelligence/escalation-store.js";
+import type { Stage, ActionRequired, LastAction, StageStability, EscalationTimelineEvent } from "../../../apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.js";
 
 // ── Result Types ─────────────────────────────────────────────────────
 
@@ -51,12 +53,24 @@ export interface CREWorkflowResult {
     label: string;
     value: string;
     direction?: "up" | "down" | "neutral";
+    interpretation?: string;
+    action?: string;
   }>;
   riskProgression: {
-    infoCount: number;
-    confirmCount: number;
-    invalidateCount: number;
-    activeStage: "info" | "confirm" | "invalidate";
+    stage: Stage;
+    accumulator: number;
+    convergenceSignals: string[];
+    enteredAt: number;
+    transitionReason: string;
+    lastAction: LastAction | null;
+    actionRequired: ActionRequired;
+    velocity?: number;
+    stageStability?: StageStability;
+    timeline?: Array<{
+      type: string;
+      timestamp: number;
+      reason: string;
+    }>;
   };
   agentDecision: {
     decision: string;
@@ -123,57 +137,71 @@ function deriveRiskFactors(
       id: "utilization",
       label: "Utilization",
       value: `${utilization}%`,
-      direction: utilization > 75 ? "up" : utilization < 50 ? "down" : "neutral",
+      direction: utilization > 75 ? ("up" as const) : utilization < 50 ? ("down" as const) : ("neutral" as const),
+      interpretation: utilization > 80
+        ? "Borrow demand rising. Liquidity stress likely."
+        : utilization > 60
+          ? "Moderate borrow demand. Pool healthy."
+          : "Low utilization. Excess liquidity available.",
+      action: utilization > 80
+        ? "Monitor pool liquidity. Avoid new borrowing."
+        : "No action required.",
     },
     {
       id: "liquidations",
       label: "Liquidations (24h)",
       value: formattedLiquidation,
-      direction: metrics.positionsAtRisk > 5 ? "up" : "down",
+      direction: metrics.positionsAtRisk > 5 ? ("up" as const) : ("down" as const),
+      interpretation: metrics.positionsAtRisk > 10
+        ? "High liquidation activity. Market stress detected."
+        : metrics.positionsAtRisk > 3
+          ? "Moderate liquidation pressure building."
+          : "Low liquidation activity. Market stable.",
+      action: metrics.positionsAtRisk > 10
+        ? "Check your position buffer. Consider adding collateral."
+        : "No action required.",
     },
     {
       id: "oracle",
       label: "Oracle Health",
       value: oracleHealthy ? "STABLE" : "DEGRADED",
-      direction: oracleHealthy ? undefined : "down",
+      direction: oracleHealthy ? undefined : ("down" as const),
+      interpretation: oracleHealthy
+        ? "Price feeds operating normally."
+        : "Oracle deviation detected. Price data may be stale.",
+      action: oracleHealthy
+        ? "No action required."
+        : "Avoid new positions until oracle stabilizes.",
     },
   ];
 }
 
-function deriveRiskProgression(
-  monitorResult: MonitorResult
+/**
+ * Evaluate the SELVA escalation state machine with the current risk data.
+ * Returns the new progression state and any required action.
+ */
+function evaluateEscalation(
+  chainId: string,
+  monitorResult: MonitorResult,
 ): CREWorkflowResult["riskProgression"] {
-  const composite = monitorResult.score.composite;
+  const machine = getEscalationMachine(chainId);
+  const result = machine.update(
+    monitorResult.score.composite,
+    monitorResult.score.dimensions,
+    Date.now(),
+  );
 
-  if (composite >= 0.75) {
-    return {
-      infoCount: 3,
-      confirmCount: 2,
-      invalidateCount: 1,
-      activeStage: "invalidate",
-    };
-  }
-  if (composite >= 0.50) {
-    return {
-      infoCount: 2,
-      confirmCount: 1,
-      invalidateCount: 0,
-      activeStage: "confirm",
-    };
-  }
-  if (composite >= 0.25) {
-    return {
-      infoCount: 1,
-      confirmCount: 0,
-      invalidateCount: 0,
-      activeStage: "info",
-    };
-  }
   return {
-    infoCount: 0,
-    confirmCount: 0,
-    invalidateCount: 0,
-    activeStage: "info",
+    stage: result.state.stage,
+    accumulator: result.state.accumulator,
+    convergenceSignals: result.state.convergenceSignals,
+    enteredAt: result.state.enteredAt,
+    transitionReason: result.state.transitionReason,
+    lastAction: result.state.lastAction,
+    actionRequired: result.actionRequired,
+    velocity: result.state.velocity,
+    stageStability: result.state.stageStability,
+    timeline: result.state.timeline,
   };
 }
 
@@ -181,7 +209,8 @@ function buildEvents(
   monitorResult: MonitorResult,
   agentResult: AgentEvaluationResult,
   metrics: AaveChainMetrics,
-  llmReasoning?: CREWorkflowResult["llmReasoning"]
+  llmReasoning?: CREWorkflowResult["llmReasoning"],
+  riskProgression?: CREWorkflowResult["riskProgression"],
 ): CREWorkflowResult["events"] {
   const now = new Date();
   const fmt = (offsetSec: number) => {
@@ -236,8 +265,11 @@ function buildEvents(
   );
 
   if (metrics.positionsAtRisk > 0) {
+    const pctAtRisk = metrics.totalPositions > 0
+      ? ((metrics.positionsAtRisk / metrics.totalPositions) * 100).toFixed(1)
+      : "0";
     push(
-      `${metrics.positionsAtRisk} positions near liquidation threshold`,
+      `${metrics.positionsAtRisk} positions within 5% liquidation distance (${pctAtRisk}% of pool) — liquidation bots likely active`,
       metrics.positionsAtRisk > 10 ? "warning" : "info",
       8
     );
@@ -255,6 +287,17 @@ function buildEvents(
 
   if (agentResult.blackSwanDetected) {
     push("Black swan conditions detected", "critical", 3);
+  }
+
+  if (riskProgression?.timeline) {
+    const recent = riskProgression.timeline.slice(-3);
+    for (const entry of recent) {
+      if (entry.type === "ENTER_CONFIRM") {
+        push("SELVA escalated to CONFIRM: " + entry.reason, "warning", 0);
+      } else if (entry.type === "ENTER_INVALIDATE") {
+        push("SELVA escalated to INVALIDATE: " + entry.reason, "critical", 0);
+      }
+    }
   }
 
   return events;
@@ -327,6 +370,14 @@ export async function runCREWorkflow(
 
   const riskLatency = Math.round(performance.now() - riskStart);
 
+  // ── Layer 1.5: SELVA Escalation State Machine ──────────────────
+  const escalation = evaluateEscalation(chainId, monitorResult);
+
+  // Circuit breaker check on INVALIDATE
+  if (escalation.stage === "invalidate") {
+    console.warn(`[cre-workflow] INVALIDATE stage entered for ${chainId} — circuit breaker evaluation recommended`);
+  }
+
   // ── Layer 2: Agent Decision ─────────────────────────────────────
   const agentStart = performance.now();
 
@@ -339,9 +390,20 @@ export async function runCREWorkflow(
     liquidityDelta: chainMetrics.positionsAtRisk > 10 ? -0.25 : -0.05,
     sampleSize: chainMetrics.totalPositions,
     timestamp: Date.now(),
+    escalationStage: escalation.stage,
   };
 
   const agentResult = agent.evaluate(riskSnapshot);
+
+  // Report action result back to escalation state machine
+  if (agentResult.actionsRequested.length > 0) {
+    const machine = getEscalationMachine(chainId);
+    machine.reportActionResult(
+      agentResult.actionsRequested[0],
+      true,
+      Date.now(),
+    );
+  }
 
   const agentLatency = Math.round(performance.now() - agentStart);
 
@@ -404,7 +466,7 @@ export async function runCREWorkflow(
       sampleSize: monitorResult.score.sampleSize,
     },
     riskFactors: deriveRiskFactors(chainMetrics, monitorResult.score.level),
-    riskProgression: deriveRiskProgression(monitorResult),
+    riskProgression: escalation,
     agentDecision: {
       decision,
       confidence: computeConfidence(monitorResult, agentResult),
@@ -422,7 +484,7 @@ export async function runCREWorkflow(
       action: actionLatency,
       total: totalLatency,
     },
-    events: buildEvents(monitorResult, agentResult, chainMetrics, llmReasoning),
+    events: buildEvents(monitorResult, agentResult, chainMetrics, llmReasoning, escalation),
     timestamp: Date.now(),
   };
 

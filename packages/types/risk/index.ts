@@ -16,3 +16,18 @@ export type {
 export type { AaveRiskSnapshot } from "./aave.js";
 export type { LidoRiskSnapshot } from "./lido.js";
 export type { UniswapRiskSnapshot } from "./uniswap.js";
+
+// Health Score system
+export type {
+  HealthCategory,
+  HealthScoreResult,
+  RiskInputs,
+  ProtocolHealthScore,
+  HealthScoreBreakdown,
+  HealthScoreMetadata,
+  UserHealthScore,
+  UserHealthPenalties,
+  MarketRegime,
+  AIContextInput,
+  AIContextResult,
+} from "./health-score.js";

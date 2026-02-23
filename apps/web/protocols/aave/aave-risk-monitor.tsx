@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 
 import {
-  ProtocolStatusBadge,
   RiskFactorCards,
   RiskProgressionBar,
   IntelligenceLayers,
@@ -12,7 +11,10 @@ import {
   PositionRiskStatus,
   EnableAlertsCTA,
   DeveloperFooter,
-  type ProtocolStatus,
+  MetricInsightsGuide,
+  HealthScoreCard,
+  AdvancedRiskMetrics,
+  StressSimulation,
   type RiskFactor,
   type RiskProgression,
   type LayerData,
@@ -21,12 +23,11 @@ import {
   type PositionRiskLevel,
 } from "@/components/aave-risk-monitor";
 import { useCREWorkflow, type CREWorkflowData } from "@/lib/use-cre-workflow";
+import { useProtocolHealth, useUserHealth } from "@/lib/use-health-score";
+import { useActionableMetrics } from "@/lib/use-actionable-metrics";
+import { useStressTest } from "@/lib/use-stress-test";
 
 // ── Data Mappers (CRE → Component Props) ─────────────────────────────
-
-function mapProtocolStatus(data: CREWorkflowData): ProtocolStatus {
-  return data.protocolStatus;
-}
 
 function mapRiskFactors(data: CREWorkflowData): RiskFactor[] {
   return data.riskFactors;
@@ -109,11 +110,20 @@ function mapAgentRecommendation(data: CREWorkflowData): string {
 
 export function AaveRiskMonitor() {
   const { data, error, isLoading } = useCREWorkflow();
+  const { data: protocolHealth } = useProtocolHealth("aave");
+  const { data: actionableMetrics } = useActionableMetrics();
 
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [alertsEnabled, setAlertsEnabled] = useState(false);
+
+  const { data: userHealth } = useUserHealth(
+    isWalletConnected ? walletAddress : null
+  );
+  const { data: stressTestData } = useStressTest(
+    isWalletConnected ? walletAddress : null
+  );
 
   const handleConnectWallet = useCallback(async () => {
     setIsConnecting(true);
@@ -157,22 +167,47 @@ export function AaveRiskMonitor() {
 
   return (
     <div className="space-y-12">
-      {/* Section 1 — Protocol Status */}
-      <ProtocolStatusBadge status={mapProtocolStatus(data)} />
+      {/* Section 1 — Protocol Health Score (Hero Metric) */}
+      {protocolHealth ? (
+        <HealthScoreCard
+          title="Aave Protocol Health"
+          score={protocolHealth.score}
+          category={protocolHealth.category}
+          reasoning={protocolHealth.reasoning}
+          confidence={protocolHealth.confidence}
+          regime={protocolHealth.regime}
+          dominantRisk={protocolHealth.dominantRisk}
+          breakdown={protocolHealth.breakdown}
+          sources={protocolHealth.metadata.sources}
+          timestamp={protocolHealth.metadata.timestamp}
+        />
+      ) : (
+        <div className="rounded-xl border border-border bg-card/50 p-6 flex items-center justify-center">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      )}
 
-      {/* Section 2 — Risk Progression Bar */}
+      {/* Section 2 — SELVA Risk Progression (State Machine) */}
       <RiskProgressionBar progression={mapRiskProgression(data)} />
 
-      {/* Section 3 — Why This Status */}
+      {/* Section 3 — Risk Factor Cards (with interpretation + action) */}
       <RiskFactorCards factors={mapRiskFactors(data)} />
 
-      {/* Section 4 — Intelligence Layers */}
-      <IntelligenceLayers data={mapIntelligenceLayers(data)} />
+      {/* Section 4 — Advanced Protocol Metrics */}
+      {actionableMetrics && actionableMetrics.length > 0 && (
+        <AdvancedRiskMetrics metrics={actionableMetrics} />
+      )}
 
-      {/* Section 5 — Live Agent Action Feed */}
-      <LiveRiskEventFeed events={mapEvents(data)} />
+      {/* Section 5 — Action Layer + Intelligence Layer (side by side) */}
+      <div className="grid grid-cols-2 gap-4">
+        <LiveRiskEventFeed events={mapEvents(data)} />
+        <IntelligenceLayers data={mapIntelligenceLayers(data)} />
+      </div>
 
-      {/* Section 6 — Position Risk */}
+      {/* Section 6 — Actionable Insights Guide (collapsible) */}
+      <MetricInsightsGuide />
+
+      {/* Section 7 — Position Risk (After Wallet Connect) */}
       {!isWalletConnected ? (
         <ConnectWalletCTA
           onConnect={handleConnectWallet}
@@ -180,14 +215,39 @@ export function AaveRiskMonitor() {
         />
       ) : (
         <>
-          <PositionRiskStatus
-            riskLevel={mapPositionRiskLevel(data)}
-            metrics={mapPositionMetrics(data)}
-            walletAddress={walletAddress}
-            agentRecommendation={mapAgentRecommendation(data)}
-          />
+          <div className="space-y-6">
+            {userHealth ? (
+              <HealthScoreCard
+                title="Your Position Health"
+                score={userHealth.score}
+                category={userHealth.category}
+                reasoning={userHealth.reasoning}
+                confidence={userHealth.confidence}
+                regime={userHealth.regime}
+                dominantRisk={userHealth.dominantRisk}
+                sources={userHealth.metadata.sources}
+                timestamp={userHealth.metadata.timestamp}
+              />
+            ) : (
+              <div className="rounded-xl border border-border bg-card/50 p-6 flex items-center justify-center">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            )}
 
-          {/* Section 7 — Final Relief */}
+            <PositionRiskStatus
+              riskLevel={mapPositionRiskLevel(data)}
+              metrics={mapPositionMetrics(data)}
+              walletAddress={walletAddress}
+              agentRecommendation={mapAgentRecommendation(data)}
+            />
+
+            {/* Stress Simulation */}
+            {stressTestData && (
+              <StressSimulation data={stressTestData} />
+            )}
+          </div>
+
+          {/* Section 8 — Alerts CTA */}
           <EnableAlertsCTA
             onEnableAlerts={handleEnableAlerts}
             isEnabled={alertsEnabled}
@@ -195,7 +255,7 @@ export function AaveRiskMonitor() {
         </>
       )}
 
-      {/* Developer Footer */}
+      {/* Section 9 — Developer Footer */}
       <DeveloperFooter />
     </div>
   );

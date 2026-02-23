@@ -95,3 +95,51 @@ export interface ProjectedHFResponse {
   liquidationProbability: number;
   timestamp: number;
 }
+
+// ── Health Score Types ───────────────────────────────────────────────
+
+export type HealthCategory = "stable" | "watch" | "high_risk";
+export type MarketRegime = "normal" | "elevated" | "stressed";
+
+export interface HealthScoreBreakdown {
+  liquidity: number;
+  riskConcentration: number;
+  liquidationRisk: number;
+  smartContractRisk: number;
+}
+
+export interface HealthScoreMetadata {
+  block: number | null;
+  timestamp: string;
+  sources: string[];
+}
+
+export interface ProtocolHealthScore {
+  protocol: string;
+  score: number;
+  category: HealthCategory;
+  confidence: number;
+  breakdown: HealthScoreBreakdown;
+  reasoning: string;
+  regime?: MarketRegime;
+  dominantRisk?: string;
+  metadata: HealthScoreMetadata;
+}
+
+export interface UserHealthScore {
+  user: string;
+  protocol: string;
+  score: number;
+  category: HealthCategory;
+  confidence: number;
+  base: number;
+  penalties: {
+    volatility: number;
+    concentration: number;
+    correlation: number;
+  };
+  reasoning: string;
+  regime?: MarketRegime;
+  dominantRisk?: string;
+  metadata: HealthScoreMetadata;
+}

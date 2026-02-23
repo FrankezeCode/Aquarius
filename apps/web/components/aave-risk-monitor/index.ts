@@ -5,13 +5,13 @@
  * Each component maps to a specific section in the page design.
  */
 
-// Section 1 — Protocol Status (Vision)
+// Section 1 — Protocol Status (Vision) — kept for backward compat, removed from page
 export {
   ProtocolStatusBadge,
   type ProtocolStatus,
 } from "./protocol-status-badge";
 
-// Section 2 — Risk Progression Bar (selvä scoring visualization)
+// Section 2 — Risk Progression Bar (SELVA state machine)
 export {
   RiskProgressionBar,
   type RiskProgression,
@@ -23,7 +23,7 @@ export {
   type RiskFactor,
 } from "./risk-factor-cards";
 
-// Section 4 — Intelligence Layers (CRE orchestration)
+// Section 4 — Intelligence Layers (CRE orchestration, behind DevMode toggle)
 export {
   IntelligenceLayers,
   type LayerData,
@@ -47,6 +47,28 @@ export {
 
 // Section 7 — Enable Alerts CTA (Peak-End Rule)
 export { EnableAlertsCTA } from "./enable-alerts-cta";
+
+// Health Score Card
+export {
+  HealthScoreCard,
+  type HealthScoreCardProps,
+  type HealthCategory,
+} from "./health-score-card";
+
+// Actionable Metric Card
+export {
+  ActionableMetricCard,
+  type ActionableMetric,
+} from "./actionable-metric-card";
+
+// Advanced Risk Metrics
+export { AdvancedRiskMetrics } from "./advanced-risk-metrics";
+
+// Stress Simulation
+export { StressSimulation } from "./stress-simulation";
+
+// Metric Insights Guide (Actionable Insights)
+export { MetricInsightsGuide } from "./metric-insights-guide";
 
 // Developer Footer
 export { DeveloperFooter } from "./developer-footer";

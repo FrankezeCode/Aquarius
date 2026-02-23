@@ -1,0 +1,155 @@
+---
+title: Execution & Simulation
+description: Chainlink CRE, CCIP, Confidential Compute, and Tenderly simulation infrastructure.
+section: Infrastructure
+---
+
+## Execution Layer
+
+Aquarius builds on three Chainlink infrastructure components:
+
+### Chainlink CRE (Chainlink Runtime Environment)
+
+CRE provides the execution substrate for Aquarius workflows. The CRE Workflow orchestrator (`run-cre-workflow.ts`) is a shared domain function that:
+
+- Runs risk intelligence through the prediction engine
+- Evaluates agent decisions using the deterministic AI Risk Agent
+- Dispatches mitigation actions to on-chain contracts
+- Returns structured results with per-layer latency metrics
+
+```typescript
+const result = await runCREWorkflow({
+  protocol: "aave",
+  chain: "ethereum",
+  mode: "production",
+});
+
+// result.protocolStatus → "stable" | "watch" | "high-risk"
+// result.agentDecision.decision → "OK" | "ESCALATE" | "OBSERVE_ONLY"
+// result.latencies → { riskEngine: 12, agentDecision: 8, ... }
+```
+
+<Callout type="info" title="Shared Domain Function">
+The CRE workflow is framework-agnostic — no UI imports, no API dependencies. It runs identically from CLI scripts, API handlers, and test suites.
+</Callout>
+
+### Chainlink CCIP (Cross-Chain Interoperability Protocol)
+
+CCIP enables cross-chain risk propagation through the `CCIPCoordinator.sol` contract:
+
+- **Risk broadcasting** — When risk is detected on one chain, a structured event is broadcast to registered chains
+- **Chain registration** — Only explicitly registered chains receive cross-chain risk signals
+- **Message format** — Risk broadcasts include protocol, chain, severity, and recommended action
+
+Current implementation supports observe-only mode. Cross-chain mitigation execution is planned for future releases.
+
+### Chainlink Confidential Compute
+
+Confidential Compute provides trusted execution for sensitive operations:
+
+- User spending approvals are verified in a confidential environment
+- Policy guard checks execute without exposing user-specific limits
+- Agent authorization is validated off-chain before on-chain dispatch
+
+## Simulation & Testing Layer
+
+### Tenderly Virtual TestNets
+
+Tenderly is Aquarius's simulation backbone. Every mitigation action is validated in simulation before production deployment.
+
+#### How Tenderly Is Used
+
+| Capability | Usage |
+|---|---|
+| Virtual testnet deployment | Fork mainnet state for deterministic testing |
+| Simulation before broadcasting | Verify transaction outcomes before submitting |
+| Gas estimation | Accurate gas costs for mitigation actions |
+| State change validation | Confirm expected state transitions |
+| Mitigation dry-runs | Execute the full pipeline without real assets |
+| Failure scenario testing | Simulate edge cases and extreme conditions |
+
+#### Infrastructure Components
+
+Aquarius maintains four Tenderly infrastructure modules:
+
+**TenderlyRpcClient** — Low-level JSON-RPC wrapper:
+
+```typescript
+class TenderlyRpcClient {
+  setBalance(address: string, balanceWei: string): Promise<void>;
+  setErc20Balance(token: string, address: string, value: string): Promise<void>;
+  setStorageAt(contract: string, slot: string, value: string): Promise<void>;
+  snapshot(): Promise<string>;
+  revert(snapshotId: string): Promise<void>;
+}
+```
+
+**ForkController** — High-level state manipulation:
+
+```typescript
+class ForkController {
+  setEthBalance(address: string, amountEth: number): Promise<void>;
+  simulateBorrow(user: string, asset: string, amount: number): Promise<void>;
+  simulateSupply(user: string, asset: string, amount: number): Promise<void>;
+  forceHealthFactor(user: string, targetHF: number): Promise<void>;
+  snapshot(): Promise<string>;
+  revert(snapshotId: string): Promise<void>;
+}
+```
+
+**ContractDeployer** — Deploys all five Aquarius smart contracts to the testnet.
+
+**UserFactory** — Creates test users with configurable Aave V3 positions.
+
+#### Why Simulation Matters
+
+- **Prevents unsafe deployments** — Every contract interaction is verified in simulation before mainnet
+- **Simulates extreme cascades** — Liquidation cascades involving thousands of positions can be tested safely
+- **Ensures deterministic mitigation** — Expected outcomes are verified against actual state changes
+- **Validates gas costs** — Mitigation actions must be economically viable; simulation confirms gas estimates
+
+### Future Simulation Workflow
+
+Before integrating any new protocol, Aquarius follows a mandatory simulation pipeline:
+
+1. **Simulate protocol state** — Fork the target protocol's current state
+2. **Stress test risk logic** — Run all preset scenarios against simulated positions
+3. **Validate escalation** — Confirm that the Observe → Warn → Act pipeline triggers correctly
+4. **Validate vault behavior** — Ensure liquidity injection and share calculations are correct
+5. **Only then deploy** — Production deployment requires all simulation stages to pass
+
+<Callout type="success" title="CI/CD Integration">
+Tenderly simulation will be integrated into the CI/CD pipeline, making it a mandatory gate for all production deployments.
+</Callout>
+
+## Scheduler & Safety Layer
+
+The Scheduler service provides continuous health monitoring for the Aquarius system itself:
+
+### Anomaly Detection
+
+Checks for:
+- Oracle inactivity (stale price feeds)
+- Execution failures (failed transactions)
+- WSS disconnections (lost data streams)
+- Graph staleness (outdated position data)
+
+### Circuit Breaker
+
+Implements a three-state machine:
+
+```
+CLOSED → OPEN → HALF_OPEN → CLOSED
+```
+
+- **CLOSED** — Normal operation; all systems active
+- **OPEN** — Anomaly detected; mitigation execution is paused to prevent incorrect actions
+- **HALF_OPEN** — Recovery in progress; limited operations allowed while health is verified
+
+### Recovery Manager
+
+Phase-based recovery when the circuit breaker opens:
+
+1. **Verifying** — Checking data source health and consistency
+2. **Warming** — Re-establishing WSS connections and rebuilding position graph
+3. **Restored** — Full operation resumed with verified state

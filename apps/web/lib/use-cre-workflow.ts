@@ -27,12 +27,28 @@ export interface CREWorkflowData {
     label: string;
     value: string;
     direction?: "up" | "down" | "neutral";
+    interpretation?: string;
+    action?: string;
   }>;
   riskProgression: {
-    infoCount: number;
-    confirmCount: number;
-    invalidateCount: number;
-    activeStage: "info" | "confirm" | "invalidate";
+    stage: "info" | "confirm" | "invalidate";
+    accumulator: number;
+    convergenceSignals: string[];
+    enteredAt: number;
+    transitionReason: string;
+    lastAction: {
+      type: string;
+      success: boolean;
+      timestamp: number;
+    } | null;
+    actionRequired: "none" | "protect" | "escalate";
+    velocity?: number;
+    stageStability?: "stable" | "transitioning" | "escalating";
+    timeline?: Array<{
+      type: string;
+      timestamp: number;
+      reason: string;
+    }>;
   };
   agentDecision: {
     decision: string;

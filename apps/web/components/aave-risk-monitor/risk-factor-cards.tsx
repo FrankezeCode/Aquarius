@@ -7,6 +7,8 @@ export interface RiskFactor {
   label: string;
   value: string;
   direction?: "up" | "down" | "neutral";
+  interpretation?: string;
+  action?: string;
 }
 
 interface RiskFactorCardsProps {
@@ -15,9 +17,9 @@ interface RiskFactorCardsProps {
 }
 
 const DIRECTION_ICONS = {
-  up: "↑",
-  down: "↓",
-  neutral: "→",
+  up: "\u2191",
+  down: "\u2193",
+  neutral: "\u2192",
 } as const;
 
 const DIRECTION_COLORS = {
@@ -26,17 +28,6 @@ const DIRECTION_COLORS = {
   neutral: "text-muted-foreground",
 } as const;
 
-/**
- * Section 2 — Why This Status Exists
- * 
- * Purpose: Trust without cognitive load
- * Exactly 4 horizontal cards, each with:
- * - One label
- * - One estimative number
- * - One direction or state
- * 
- * Numbers must feel diagnostic, not analytical.
- */
 export function RiskFactorCards({ factors, className }: RiskFactorCardsProps) {
   return (
     <section className={cn("space-y-3", className)} aria-label="Risk Factors">
@@ -48,12 +39,12 @@ export function RiskFactorCards({ factors, className }: RiskFactorCardsProps) {
         {factors.map((factor) => (
           <div
             key={factor.id}
-            className="rounded-xl border border-border bg-card/50 p-4"
+            className="rounded-xl border border-border bg-card/50 p-4 space-y-2"
           >
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {factor.label}
             </span>
-            <p className="mt-2 flex items-baseline gap-1.5">
+            <p className="flex items-baseline gap-1.5">
               <span className="text-xl font-semibold text-foreground">
                 {factor.value}
               </span>
@@ -69,6 +60,18 @@ export function RiskFactorCards({ factors, className }: RiskFactorCardsProps) {
                 </span>
               )}
             </p>
+
+            {factor.interpretation && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {factor.interpretation}
+              </p>
+            )}
+
+            {factor.action && (
+              <p className="text-xs text-primary">
+                {factor.action}
+              </p>
+            )}
           </div>
         ))}
       </div>

@@ -1,0 +1,448 @@
+---
+title: API Reference
+description: Public risk intelligence endpoints and response schemas.
+section: Developer Guide
+---
+
+## Overview
+
+The Aquarius API is the primary interface for consuming risk intelligence. It is built on Fastify and versioned under `/v1/`. All endpoints are read-only, schema-validated, and designed for programmatic consumption by bots, dashboards, and protocol integrations.
+
+<Callout type="info" title="API-First Design">
+The API is the product. The web frontend, SDK, and all internal services consume the same API endpoints. There is no privileged internal access.
+</Callout>
+
+## Base URL
+
+```
+https://api.aquarius.finance/v1
+```
+
+## Authentication
+
+Public risk endpoints do not require authentication in the current release. Rate limiting is enforced per IP address.
+
+| Tier | Rate Limit |
+|---|---|
+| Public | 60 requests/minute |
+| Authenticated (future) | 600 requests/minute |
+| Enterprise (future) | Custom |
+
+## Endpoints
+
+### Risk Health
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/health/:chain" description="Returns composite risk health metrics for a given chain.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `chain` | `string` | Target chain: `ethereum`, `arbitrum`, `base`, `solana` |
+
+**Response**
+
+```json
+{
+  "protocol": "aave",
+  "chain": "ethereum",
+  "globalRiskIndex": 42,
+  "liquidationPressure": 0.15,
+  "timestamp": "2026-02-20T12:00:00.000Z"
+}
+```
+
+**Response Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `protocol` | `string` | Protocol identifier |
+| `chain` | `string` | Chain identifier |
+| `globalRiskIndex` | `number` | Composite risk score (0-100) |
+| `liquidationPressure` | `number` | Aggregate liquidation pressure (0-1) |
+| `timestamp` | `string` | ISO-8601 timestamp |
+
+</ApiEndpoint>
+
+### Liquidation Pressure
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/liquidation-pressure/:chain" description="Returns liquidation pressure metrics for a given chain.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `chain` | `string` | Target chain: `ethereum`, `arbitrum`, `base`, `solana` |
+
+**Response**
+
+```json
+{
+  "protocol": "aave",
+  "chain": "ethereum",
+  "globalRiskIndex": 38,
+  "liquidationPressure": 0.22,
+  "timestamp": "2026-02-20T12:00:00.000Z"
+}
+```
+
+</ApiEndpoint>
+
+### Projected Health Factor
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/projected-hf/:user" description="Projects health factor forward for a specific user address.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `user` | `string` | Ethereum address of the user |
+
+**Response**
+
+```json
+{
+  "user": "0x1234...abcd",
+  "currentHF": 1.21,
+  "projectedHF": 1.08,
+  "blocksAhead": 100,
+  "confidence": 0.85,
+  "breachBlock": 14250100,
+  "riskVelocity": {
+    "slope": -0.0013,
+    "isAccelerating": true
+  },
+  "liquidationProbability": 0.72,
+  "timestamp": 1708444800000
+}
+```
+
+**Response Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `user` | `string` | User address |
+| `currentHF` | `number` | Current health factor |
+| `projectedHF` | `number` | Projected health factor at `blocksAhead` |
+| `blocksAhead` | `number` | Projection horizon in blocks |
+| `confidence` | `number` | Projection confidence (0.5-0.95) |
+| `breachBlock` | `number \| null` | Estimated block where HF drops below 1.0, or null |
+| `riskVelocity.slope` | `number` | Rate of HF change per block |
+| `riskVelocity.isAccelerating` | `boolean` | Whether the decline is accelerating |
+| `liquidationProbability` | `number` | Probability of liquidation (0-1) |
+| `timestamp` | `number` | Unix timestamp |
+
+</ApiEndpoint>
+
+### Protocol Health Score
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/protocol-health/:chain" description="Returns a deterministic, AI-augmented health score for the Aave protocol on a given chain.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `chain` | `string` | Target chain (default: `ethereum`) |
+
+**Response**
+
+```json
+{
+  "protocol": "aave",
+  "score": 74,
+  "category": "watch",
+  "confidence": 0.82,
+  "breakdown": {
+    "liquidity": 78,
+    "riskConcentration": 65,
+    "liquidationRisk": 58,
+    "smartContractRisk": 90
+  },
+  "reasoning": "Elevated liquidation risk is the primary driver of reduced health.",
+  "regime": "elevated",
+  "dominantRisk": "liquidation risk",
+  "metadata": {
+    "block": null,
+    "timestamp": "2026-02-18T12:00:00.000Z",
+    "sources": ["on-chain-aave-v3", "position-snapshots", "risk-correlator", "ai-context-engine"]
+  }
+}
+```
+
+**Response Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `protocol` | `string` | Protocol identifier |
+| `score` | `number` | Composite health score (0–100, higher = healthier) |
+| `category` | `string` | `"stable"`, `"watch"`, or `"high_risk"` |
+| `confidence` | `number` | Score confidence (0–1) |
+| `breakdown` | `object` | Per-dimension health scores (0–100, inverted: higher = healthier) |
+| `reasoning` | `string` | Human-readable explanation of the score |
+| `regime` | `string` | Market regime: `"normal"`, `"elevated"`, or `"stressed"` |
+| `dominantRisk` | `string` | Primary risk vector identified |
+| `metadata.block` | `number \| null` | Block number at time of assessment |
+| `metadata.timestamp` | `string` | ISO-8601 timestamp |
+| `metadata.sources` | `string[]` | Data sources used in computation |
+
+</ApiEndpoint>
+
+### User Health Score
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/user-health/:address" description="Returns a penalty-adjusted health score for a specific wallet address on Aave.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `address` | `string` | Valid Ethereum address (0x-prefixed, 40 hex characters) |
+
+**Response**
+
+```json
+{
+  "user": "0x1234...abcd",
+  "protocol": "aave",
+  "score": 68,
+  "category": "watch",
+  "confidence": 0.85,
+  "base": 75,
+  "penalties": {
+    "volatility": 3,
+    "concentration": 4,
+    "correlation": 0
+  },
+  "reasoning": "Health factor of 2.00 combined with high collateral concentration in a single asset reduces position safety.",
+  "regime": "normal",
+  "dominantRisk": "liquidity risk",
+  "metadata": {
+    "block": null,
+    "timestamp": "2026-02-18T12:00:00.000Z",
+    "sources": ["on-chain-aave-v3", "oracle-feeds", "ai-context-engine"]
+  }
+}
+```
+
+**Response Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `user` | `string` | Wallet address |
+| `protocol` | `string` | Protocol identifier |
+| `score` | `number` | Final health score (0–100) |
+| `category` | `string` | `"stable"`, `"watch"`, or `"high_risk"` |
+| `confidence` | `number` | Score confidence (0–1) |
+| `base` | `number` | Health-factor-derived base score before penalties |
+| `penalties.volatility` | `number` | Points deducted for declining HF trajectory |
+| `penalties.concentration` | `number` | Points deducted for single-asset collateral dominance |
+| `penalties.correlation` | `number` | Points deducted for correlated collateral |
+| `reasoning` | `string` | Human-readable explanation |
+| `regime` | `string` | Market regime classification |
+| `dominantRisk` | `string` | Primary risk vector |
+| `metadata` | `object` | Block, timestamp, and data sources |
+
+</ApiEndpoint>
+
+### Actionable Metrics
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/actionable-metrics" description="Returns protocol-level metrics where every value includes interpretation and a recommended action.">
+
+**Response**
+
+```json
+{
+  "metrics": [
+    {
+      "id": "cascading-exposure",
+      "label": "Cascading Liquidation Exposure",
+      "value": "4.2%",
+      "numericValue": 4.2,
+      "interpretation": "4.2% of positions near liquidation. Low systemic risk.",
+      "action": "No action required.",
+      "severity": "safe"
+    },
+    {
+      "id": "liquidity-buffer",
+      "label": "Liquidity Buffer Ratio",
+      "value": "2.31x",
+      "numericValue": 2.31,
+      "interpretation": "Buffer ratio 2.31x. Healthy protocol collateralization.",
+      "action": "No action required.",
+      "severity": "safe"
+    },
+    {
+      "id": "volatility-regime",
+      "label": "Volatility Regime",
+      "value": "Low",
+      "numericValue": 0.42,
+      "interpretation": "Low volatility (42% annualized). Stable market conditions.",
+      "action": "No action required.",
+      "severity": "safe"
+    }
+  ],
+  "timestamp": 1708257600000
+}
+```
+
+**Metric Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique metric identifier |
+| `label` | `string` | Human-readable metric name |
+| `value` | `string` | Formatted display value |
+| `numericValue` | `number` | Raw numeric value for programmatic use |
+| `interpretation` | `string` | What this value means in context |
+| `action` | `string` | Recommended action for the user or system |
+| `severity` | `string` | `"safe"`, `"warning"`, or `"critical"` |
+
+</ApiEndpoint>
+
+### Stress Test
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/stress-test/:user" description="Runs preset stress scenarios against a user's Aave position and returns projected health factors.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `user` | `string` | Ethereum address (0x-prefixed) |
+
+**Response**
+
+```json
+{
+  "user": "0x1234...abcd",
+  "currentHF": 1.85,
+  "scenarios": [
+    {
+      "name": "ETH -10%",
+      "projectedHF": 1.665,
+      "lossUsd": 0,
+      "wouldLiquidate": false
+    },
+    {
+      "name": "ETH -20%",
+      "projectedHF": 1.48,
+      "lossUsd": 0,
+      "wouldLiquidate": false
+    },
+    {
+      "name": "USDC depeg to $0.95",
+      "projectedHF": 1.85,
+      "lossUsd": 0,
+      "wouldLiquidate": false
+    }
+  ],
+  "interpretation": "Your position survives all tested stress scenarios.",
+  "action": "No action required. Position is resilient.",
+  "timestamp": 1708257600000
+}
+```
+
+**Response Schema**
+
+| Field | Type | Description |
+|---|---|---|
+| `user` | `string` | Wallet address |
+| `currentHF` | `number` | Current health factor |
+| `scenarios[].name` | `string` | Scenario description |
+| `scenarios[].projectedHF` | `number` | Health factor after stress |
+| `scenarios[].lossUsd` | `number` | Estimated loss in USD if liquidated |
+| `scenarios[].wouldLiquidate` | `boolean` | Whether the position would be liquidated |
+| `interpretation` | `string` | Summary of stress test results |
+| `action` | `string` | Recommended action |
+| `timestamp` | `number` | Unix timestamp |
+
+<Callout type="warning" title="RPC Required">
+This endpoint requires a configured `TENDERLY_RPC_URL` or `RPC_URL`. Returns 503 if no RPC is available.
+</Callout>
+
+</ApiEndpoint>
+
+### Risk Progression (CRE Workflow)
+
+The CRE workflow endpoint returns escalation state as part of the `riskProgression` object. The following fields are available:
+
+```json
+{
+  "riskProgression": {
+    "stage": "info",
+    "accumulator": 12.4,
+    "convergenceSignals": ["Liquidation Proximity", "Health-Factor Pressure"],
+    "enteredAt": 1708257600000,
+    "transitionReason": "Initial state",
+    "lastAction": null,
+    "actionRequired": "none",
+    "velocity": 1.2,
+    "stageStability": "stable",
+    "timeline": [
+      {
+        "type": "ENTER_INFO",
+        "timestamp": 1708257600000,
+        "reason": "Initial state"
+      }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `stage` | `string` | Current escalation stage: `"info"`, `"confirm"`, or `"invalidate"` |
+| `accumulator` | `number` | Current risk accumulator value (0–100) |
+| `convergenceSignals` | `string[]` | Risk dimensions currently contributing to accumulation |
+| `enteredAt` | `number` | Timestamp when current stage was entered |
+| `transitionReason` | `string` | Human-readable reason for the last stage transition |
+| `lastAction` | `object \| null` | Last mitigation action result (type, success, timestamp) |
+| `actionRequired` | `string` | `"none"`, `"protect"`, or `"escalate"` |
+| `velocity` | `number` | Delta accumulator over the last 60 seconds (optional) |
+| `stageStability` | `string` | `"stable"`, `"transitioning"`, or `"escalating"` (optional) |
+| `timeline` | `array` | Chronological audit trail of escalation events (optional, max 20) |
+
+## Error Handling
+
+All endpoints return structured errors:
+
+```json
+{
+  "error": "INVALID_CHAIN",
+  "message": "Chain 'polygon' is not currently supported",
+  "statusCode": 400
+}
+```
+
+| Status Code | Description |
+|---|---|
+| `200` | Success |
+| `400` | Invalid parameters |
+| `404` | Resource not found |
+| `429` | Rate limit exceeded |
+| `500` | Internal server error |
+
+## Internal Endpoints
+
+Internal endpoints under `/protocol/` are used for operational purposes:
+
+| Path | Purpose |
+|---|---|
+| `/protocol/aave/internal/indexing/*` | Trigger re-indexing |
+| `/protocol/aave/internal/ingestion/*` | Data pipeline control |
+| `/protocol/aave/internal/monitoring/*` | Health metrics |
+| `/protocol/aave/chains/:chain/events` | Per-chain event queries |
+| `/protocol/aave/public/signals/*` | Risk signal streams |
+| `/protocol/aave/public/streams/*` | Liquidation and mempool streams |
+
+<Callout type="warning" title="Internal API">
+Internal endpoints are not part of the public API contract and may change without notice. Use `/v1/` endpoints for stable integrations.
+</Callout>
+
+## CRE Webhook
+
+The CRE webhook endpoint accepts Chainlink Runtime Environment callbacks:
+
+```
+POST /internal/ingest/cre-webhook
+```
+
+This endpoint processes CRE execution results and feeds them back into the risk intelligence pipeline for post-execution validation.

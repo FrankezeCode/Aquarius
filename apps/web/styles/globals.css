@@ -90,10 +90,16 @@
   .aquarius-grid-bg {
     background-image: linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-size: 40px 40px;
   }
   .aquarius-text-gradient {
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-chrome-gradient {
+    background: linear-gradient(180deg, #ffffff 0%, #e0e4e8 25%, #9aa3b0 60%, #6b7685 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -110,4 +116,110 @@
   .shadow-glow {
     box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.4);
   }
+
+}
+
+@keyframes laser-scan {
+  0% {
+    left: -15%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.15;
+  }
+  18% {
+    opacity: 0.6;
+  }
+  28% {
+    opacity: 1;
+  }
+  72% {
+    left: 115%;
+    opacity: 1;
+  }
+  82% {
+    opacity: 0.6;
+  }
+  92% {
+    opacity: 0.15;
+  }
+  100% {
+    left: 115%;
+    opacity: 0;
+  }
+}
+
+.hero-laser-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Laser beam — thin vertical line with glow */
+.hero-laser-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -15%;
+  width: 0.5px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(100, 255, 160, 0.15) 8%,
+    rgba(120, 255, 170, 0.5) 20%,
+    rgba(150, 255, 200, 0.9) 50%,
+    rgba(120, 255, 170, 0.5) 80%,
+    rgba(100, 255, 160, 0.15) 92%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 2px 0.5px rgba(100, 255, 160, 0.35),
+    0 0 7px 1.5px rgba(80, 230, 140, 0.15),
+    0 0 16px 4px rgba(60, 210, 120, 0.06);
+  animation: laser-scan 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* SELVA progression bar directional pulse */
+@keyframes barPulseForward {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(1.06);
+  }
+}
+
+@keyframes barPulseBackward {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.94);
+  }
+}
+
+/* Soft glow flanking the beam */
+.hero-laser-container::before {
+  content: "";
+  position: absolute;
+  top: -5%;
+  bottom: -5%;
+  left: -15%;
+  width: 40px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(100, 255, 160, 0.06) 20%,
+    rgba(120, 255, 170, 0.1) 50%,
+    rgba(100, 255, 160, 0.06) 80%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: laser-scan 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 9;
+  transform: translateX(-20px);
 }

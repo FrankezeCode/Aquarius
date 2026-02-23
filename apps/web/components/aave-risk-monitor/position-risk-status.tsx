@@ -89,25 +89,11 @@ export function PositionRiskStatus({
       className={cn("space-y-6", className)}
       aria-label="Your Position Risk"
     >
-      <div className="flex flex-col items-center text-center">
+      <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
           Your Aave Risk Status
         </h3>
-        <p className="mt-1 text-xs text-muted-foreground">{truncatedAddress}</p>
-
-        <div
-          className={cn(
-            "mt-4 flex items-center gap-2 rounded-xl border px-6 py-4",
-            config.bgClass
-          )}
-        >
-          <span className="text-2xl" aria-hidden="true">
-            {config.icon}
-          </span>
-          <span className={cn("text-2xl font-bold tracking-tight", config.textClass)}>
-            {config.label}
-          </span>
-        </div>
+        <span className="text-xs text-muted-foreground">{truncatedAddress}</span>
       </div>
 
       {/* Proximity Metrics */}

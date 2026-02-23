@@ -35,107 +35,112 @@ const DECISION_COLORS: Record<string, string> = {
   ESCALATE: "text-red-400",
 };
 
-function LayerCard({
-  number,
-  title,
-  latencyMs,
-  children,
+function IntelCard({
+  label,
+  value,
+  valueClass,
+  sublabel,
 }: {
-  number: number;
-  title: string;
-  latencyMs: number;
-  children: React.ReactNode;
+  label: string;
+  value: string;
+  valueClass?: string;
+  sublabel?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card/50 p-5">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-            {number}
-          </span>
-          <h4 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-            {title}
-          </h4>
-        </div>
-        <span className="text-xs text-muted-foreground/60 font-mono tabular-nums">
-          {latencyMs}ms
-        </span>
-      </div>
-      {children}
+    <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 space-y-1">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
+        {label}
+      </span>
+      <p className={cn("text-sm font-semibold", valueClass ?? "text-foreground")}>
+        {value}
+      </p>
+      {sublabel && (
+        <span className="text-[10px] text-muted-foreground/40">{sublabel}</span>
+      )}
     </div>
   );
 }
 
-function MetricRow({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+function LatencyCard({ label, ms }: { label: string; ms: number }) {
   return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={cn("text-sm font-semibold", valueClass ?? "text-foreground")}>{value}</span>
+    <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 flex flex-col items-start gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
+        {label}
+      </span>
+      <span className="text-sm font-mono tabular-nums text-muted-foreground font-medium">
+        {ms}ms
+      </span>
     </div>
   );
 }
 
 export function IntelligenceLayers({ data, className }: IntelligenceLayersProps) {
   return (
-    <section className={cn("space-y-3", className)} aria-label="Intelligence Layers">
-      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-        Intelligence Layers
+    <section className={cn("space-y-0", className)} aria-label="Intelligence Layer">
+      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">
+        Intelligence Layer
       </h3>
 
-      <div className="grid gap-3">
-        {/* Layer 1: Risk Intelligence */}
-        <LayerCard number={1} title="Risk Intelligence" latencyMs={data.riskLatencyMs}>
-          <MetricRow label="Composite Score" value={String(data.riskScore)} />
-          <MetricRow
-            label="Stress Level"
-            value={data.stressLevel}
-            valueClass={STRESS_COLORS[data.stressLevel]}
-          />
-        </LayerCard>
+      <div className="rounded-xl border border-border bg-[#0a0a0c] overflow-hidden flex flex-col">
+        {/* Intelligence metrics */}
+        <div className="p-4 space-y-3">
+          {/* Row 1: Risk Score + Stress Level */}
+          <div className="grid grid-cols-2 gap-3">
+            <IntelCard
+              label="Risk Score"
+              value={String(data.riskScore)}
+              sublabel="Composite"
+            />
+            <IntelCard
+              label="Stress Level"
+              value={data.stressLevel}
+              valueClass={STRESS_COLORS[data.stressLevel]}
+            />
+          </div>
 
-        {/* Layer 2: Agent Decision */}
-        <LayerCard number={2} title="Agent Decision" latencyMs={data.agentLatencyMs}>
-          <MetricRow
-            label="Decision"
-            value={data.agentDecision.replace(/_/g, " ")}
-            valueClass={DECISION_COLORS[data.agentDecision]}
-          />
-          <MetricRow label="Confidence" value={`${data.agentConfidence}%`} />
-        </LayerCard>
+          {/* Row 2: Agent Decision + Confidence */}
+          <div className="grid grid-cols-2 gap-3">
+            <IntelCard
+              label="Agent Decision"
+              value={data.agentDecision.replace(/_/g, " ")}
+              valueClass={DECISION_COLORS[data.agentDecision]}
+            />
+            <IntelCard
+              label="Confidence"
+              value={`${data.agentConfidence}%`}
+            />
+          </div>
 
-        {/* Layer 3: LLM Reasoning */}
-        <LayerCard number={3} title="LLM Reasoning" latencyMs={data.llmLatencyMs ?? 0}>
-          {data.llmAction ? (
-            <>
-              <MetricRow label="Action" value={data.llmAction} />
-              <MetricRow label="Confidence" value={String(data.llmConfidence)} />
+          {/* LLM Reasoning (if available) */}
+          {data.llmAction && (
+            <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 space-y-1">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
+                LLM Reasoning
+              </span>
+              <p className="text-sm text-foreground font-medium">
+                {data.llmAction}
+              </p>
               {data.llmReason && (
-                <p className="mt-2 text-xs text-muted-foreground italic leading-relaxed">
+                <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">
                   &ldquo;{data.llmReason}&rdquo;
                 </p>
               )}
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground/70 italic">
-              LLM reasoning unavailable — operating on deterministic rules.
-            </p>
+            </div>
           )}
-        </LayerCard>
+        </div>
 
-        {/* Layer 4: Action Layer */}
-        <LayerCard number={4} title="Action Layer" latencyMs={data.actionLatencyMs}>
-          <div className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">Dispatched:</span>
-            <ul className="space-y-1">
-              {data.dispatchedActions.map((action) => (
-                <li key={action} className="flex items-center gap-2 text-sm text-foreground">
-                  <span className="h-1 w-1 rounded-full bg-primary shrink-0" />
-                  {action}
-                </li>
-              ))}
-            </ul>
+        {/* Latency section */}
+        <div className="border-t border-border/50 p-4 space-y-2">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-medium">
+            Latency
+          </span>
+          <div className="grid grid-cols-2 gap-3">
+            <LatencyCard label="Risk" ms={data.riskLatencyMs} />
+            <LatencyCard label="Agent" ms={data.agentLatencyMs} />
+            <LatencyCard label="LLM" ms={data.llmLatencyMs ?? 0} />
+            <LatencyCard label="Action" ms={data.actionLatencyMs} />
           </div>
-        </LayerCard>
+        </div>
       </div>
     </section>
   );

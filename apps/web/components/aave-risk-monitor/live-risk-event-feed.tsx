@@ -21,26 +21,48 @@ const SEVERITY_COLORS = {
   critical: "text-red-400",
 } as const;
 
-/**
- * Section 4 — Live Risk Event Feed
- * 
- * Purpose: Time-sensitivity & urgency
- * Terminal-style, auto-scrolling feed.
- * Must feel like "things are happening right now."
- * 
- * Rules:
- * - Chronological
- * - Numbers allowed only inside events
- * - No filters
- * - No interaction
- */
+function highlightValues(message: string): React.ReactNode {
+  const parts = message.split(/(\d+\.\d+|\b(?:MATCH|PROTECT_POSITION|ESCALATE|OBSERVE_ONLY|HIGH|CRITICAL|WARNING)\b)/g);
+
+  return parts.map((part, i) => {
+    if (/^\d+\.\d+$/.test(part)) {
+      return (
+        <span key={i} className="text-emerald-400">
+          {part}
+        </span>
+      );
+    }
+    if (/^(MATCH|PROTECT_POSITION|ESCALATE)$/.test(part)) {
+      return (
+        <span key={i} className="text-cyan-400">
+          {part}
+        </span>
+      );
+    }
+    if (/^(HIGH|CRITICAL|WARNING)$/.test(part)) {
+      return (
+        <span key={i} className="text-amber-400">
+          {part}
+        </span>
+      );
+    }
+    if (/^OBSERVE_ONLY$/.test(part)) {
+      return (
+        <span key={i} className="text-emerald-400">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+}
+
 export function LiveRiskEventFeed({
   events,
   className,
 }: LiveRiskEventFeedProps) {
   const feedRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new events arrive
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -49,51 +71,59 @@ export function LiveRiskEventFeed({
 
   return (
     <section
-      className={cn("space-y-3", className)}
-      aria-label="Live Risk Events"
+      className={cn("space-y-0", className)}
+      aria-label="Action Layer"
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Live Agent Feed
-        </h3>
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="text-xs text-muted-foreground">Live</span>
-        </div>
-      </div>
+      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">
+        Action Layer
+      </h3>
 
-      <div
-        ref={feedRef}
-        className="h-48 overflow-y-auto rounded-xl border border-border bg-black/40 font-mono text-sm"
-        role="log"
-        aria-live="polite"
-      >
-        {events.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            Waiting for events...
+      <div className="rounded-xl border border-border bg-[#0a0a0c] overflow-hidden flex flex-col">
+        {/* Terminal header bar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-[#111214]">
+          <span className="text-xs font-mono text-muted-foreground/80">
+            root@aquarius-agent:~
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-xs text-emerald-400 font-medium">Live</span>
           </div>
-        ) : (
-          <div className="p-4 space-y-1">
-            {events.map((event) => (
-              <div key={event.id} className="flex gap-2">
-                <span className="text-muted-foreground shrink-0">
-                  [{event.timestamp}]
-                </span>
-                <span
-                  className={cn(
-                    "text-foreground",
-                    event.severity && SEVERITY_COLORS[event.severity]
-                  )}
-                >
-                  {event.message}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
+
+        {/* Feed content */}
+        <div
+          ref={feedRef}
+          className="h-[280px] overflow-y-auto font-mono text-[13px] leading-relaxed"
+          role="log"
+          aria-live="polite"
+        >
+          {events.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              Waiting for events...
+            </div>
+          ) : (
+            <div className="p-4 space-y-1.5">
+              {events.map((event) => (
+                <div key={event.id} className="flex gap-3">
+                  <span className="text-muted-foreground/50 shrink-0 tabular-nums">
+                    {event.timestamp}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-muted-foreground/90",
+                      event.severity && SEVERITY_COLORS[event.severity],
+                    )}
+                  >
+                    {highlightValues(event.message)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

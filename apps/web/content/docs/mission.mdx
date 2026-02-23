@@ -1,0 +1,55 @@
+---
+title: Our Mission
+description: To become the standard protection layer for on-chain finance.
+section: Getting Started
+---
+
+## Vision
+
+Aquarius exists to solve one problem: **on-chain finance has no protection layer.**
+
+TradFi has circuit breakers, margin call systems, risk desks, and compliance-aware escalation. DeFi has nothing equivalent. When positions approach liquidation, users are on their own — watching dashboards, scrambling for gas, and hoping they react in time.
+
+This is not a tooling gap. It is an **infrastructure gap**.
+
+## The Protection Thesis
+
+If traditional finance comes on-chain — and it is — three things must be true:
+
+1. **Positions must be protected** — not by manual monitoring, but by automated, protocol-aware systems that understand the specific risk mechanics of each protocol
+2. **Risk must be interpreted** — raw data is not insight; protocol state must be transformed into actionable intelligence with severity classification and recommended actions
+3. **Escalation must be automated** — the path from risk detection to mitigation execution must be deterministic, bounded, and auditable
+
+Aquarius is the system that makes these three things true.
+
+## What Aquarius Is Not
+
+Aquarius is **not** a bot. It is not a dashboard. It is not a monitoring tool.
+
+It is **financial protection infrastructure** — a composable layer that sits between protocol state and execution infrastructure, providing the risk intelligence that makes automated protection possible.
+
+| Aquarius Is | Aquarius Is Not |
+|---|---|
+| Infrastructure layer | Point solution |
+| Protocol-aware risk engine | Generic alert system |
+| Deterministic escalation pipeline | Heuristic-based bot |
+| Non-custodial execution framework | Custodial fund manager |
+| Chainlink CRE extension | Chainlink competitor |
+
+## Design Principles
+
+### Security Over Performance Over Convenience
+
+Every design decision prioritizes safety. If a feature weakens security assumptions, it does not ship. If uncertain between two approaches, we choose the safer option.
+
+### APIs Are the Product
+
+The primary surface of Aquarius is its API. The web interface is a consumer of that API — never the other way around. This ensures composability with any integration pattern: bots, DAOs, institutional dashboards, or protocol-native UIs.
+
+### Protocol Logic Is Isolated
+
+Each protocol adapter is a bounded context with its own types, risk models, and chain bindings. Protocol-specific logic never leaks across boundaries. Adding a new protocol does not require modifying existing ones.
+
+### Deterministic Over Probabilistic
+
+The core risk engine and escalation pipeline are fully deterministic. An optional LLM reasoning layer provides additional context but is never allowed to block or override the deterministic path.
