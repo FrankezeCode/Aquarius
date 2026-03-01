@@ -80,9 +80,10 @@ export interface CREWorkflowData {
   timestamp: number;
 }
 
-export function useCREWorkflow() {
+export function useCREWorkflow(chain: string = "ethereum") {
+  const endpoint = `${CRE_ENDPOINT}?chain=${encodeURIComponent(chain)}`;
   const { data, error, isLoading, isValidating, mutate } =
-    useSWR<CREWorkflowData>(CRE_ENDPOINT, fetcher, {
+    useSWR<CREWorkflowData>(endpoint, fetcher, {
       refreshInterval: POLL_INTERVAL_MS,
       revalidateOnFocus: true,
       dedupingInterval: 2_000,

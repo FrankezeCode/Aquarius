@@ -12,6 +12,9 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { createMarketDataProvider } from "../../../adapters/providerFactory.js";
 import { deriveChainMetrics } from "../../../protocols/aave/risk-intelligence/signals.js";
+import type { PositionSnapshot } from "../../../domain/models/PositionSnapshot.js";
+import { assertAaveValidationMode } from "./validation-guard.js";
+import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
 
 interface ActionableMetric {
   id: string;
@@ -93,11 +96,19 @@ function deriveLiquidityBuffer(
   };
 }
 
-function deriveVolatilityRegime(): ActionableMetric {
-  // Volatility regime derived from mock EWMA data.
-  // In production, this would read from VolatilityForecaster singleton.
-  const regime = "low" as "low" | "elevated" | "extreme";
-  const annualizedVol = 0.42;
+function deriveVolatilityRegime(
+  positions: PositionSnapshot[],
+): ActionableMetric {
+  const hfs = positions.map((p) => p.healthFactor).filter((v) => Number.isFinite(v) && v > 0);
+  const mean = hfs.length > 0 ? hfs.reduce((a, b) => a + b, 0) / hfs.length : 1.5;
+  const variance =
+    hfs.length > 1
+      ? hfs.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / hfs.length
+      : 0.02;
+  const hfStdDev = Math.sqrt(Math.max(0, variance));
+  const annualizedVol = Math.max(0.1, Math.min(1.8, hfStdDev * 0.9));
+  const regime: "low" | "elevated" | "extreme" =
+    annualizedVol > 1.0 ? "extreme" : annualizedVol > 0.6 ? "elevated" : "low";
 
   let severity: "safe" | "warning" | "critical" = "safe";
   let interpretation: string;
@@ -132,16 +143,26 @@ export function createActionableMetricsRoute() {
     app: FastifyInstance,
     _opts: FastifyPluginOptions,
   ) {
-    app.get("/", async (_request, reply) => {
+    app.get<{ Querystring: { chain?: string } }>("/", async (request, reply) => {
+      if (!assertAaveValidationMode(reply)) return;
       try {
+        const requestedChain = request.query.chain?.toLowerCase();
+        if (requestedChain && !isAaveActiveChain(requestedChain)) {
+          return reply.status(400).send({
+            error: "Unsupported chain",
+            message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+          });
+        }
+        const chain = resolveAaveActiveChain(requestedChain);
+
         const provider = createMarketDataProvider();
-        const positions = await provider.fetchPositionSnapshots("ethereum", 50);
-        const metrics = deriveChainMetrics("ethereum", positions);
+        const positions = await provider.fetchPositionSnapshots(chain, 50);
+        const metrics = deriveChainMetrics(chain, positions);
 
         const result: ActionableMetric[] = [
           deriveCascadingExposure(metrics.positionsAtRisk, metrics.totalPositions),
           deriveLiquidityBuffer(metrics.totalCollateralUsd, metrics.totalDebtUsd),
-          deriveVolatilityRegime(),
+          deriveVolatilityRegime(positions),
         ];
 
         return reply.send({ metrics: result, timestamp: Date.now() });

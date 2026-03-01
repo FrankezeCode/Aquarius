@@ -17,7 +17,7 @@ export { getAaveRiskSignals, getAaveMarketRisk } from "./risk.js";
 export { getProjectedHF } from "./projected-hf.js";
 
 // Health Score
-export { getProtocolHealth, getUserHealth } from "./health-score.js";
+export { getProtocolHealth, getUserHealth, getUserRisk } from "./health-score.js";
 
 // Domain types
 export type {
@@ -29,9 +29,11 @@ export type {
   AaveRiskApiResponse,
   ProjectedHFResponse,
   HealthCategory,
+  HealthFactorDirection,
   MarketRegime,
   ProtocolHealthScore,
   UserHealthScore,
+  UserRiskResponse,
   HealthScoreBreakdown,
   HealthScoreMetadata,
 } from "./types.js";

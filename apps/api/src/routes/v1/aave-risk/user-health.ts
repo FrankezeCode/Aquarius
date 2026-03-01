@@ -8,6 +8,9 @@
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { HealthEngine } from "../../../services/health-engine/index.js";
+import { assertAaveValidationMode } from "./validation-guard.js";
+import { normalizeEthereumAddress } from "./address-normalizer.js";
+import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
 
 const engine = new HealthEngine();
 
@@ -16,20 +19,44 @@ export function createUserHealthRoute() {
     app: FastifyInstance,
     _opts: FastifyPluginOptions
   ) {
-    app.get<{ Params: { address: string } }>(
+    app.get<{ Params: { address: string }; Querystring: { chain?: string } }>(
       "/:address",
       async (request, reply) => {
+        if (!assertAaveValidationMode(reply)) return;
+        const requestedChain = request.query.chain?.toLowerCase();
+        if (requestedChain && !isAaveActiveChain(requestedChain)) {
+          return reply.status(400).send({
+            error: "Unsupported chain",
+            message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+          });
+        }
+        const chain = resolveAaveActiveChain(requestedChain);
         const { address } = request.params;
+        const normalizedAddress = normalizeEthereumAddress(address);
 
-        if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        if (!normalizedAddress) {
           return reply.status(400).send({
             error: "Invalid Ethereum address",
             message: "Address must be a valid 0x-prefixed 40-character hex string.",
           });
         }
 
-        const result = await engine.getUserHealth(address, "aave");
-        return reply.send(result);
+        try {
+          const result = await engine.getUserHealth(normalizedAddress, "aave", chain);
+          return reply.send(result);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message.includes("No active Aave position found")) {
+            return reply.status(404).send({
+              error: "User position not found",
+              message,
+            });
+          }
+          return reply.status(500).send({
+            error: "Unable to compute user health",
+            message,
+          });
+        }
       }
     );
   };

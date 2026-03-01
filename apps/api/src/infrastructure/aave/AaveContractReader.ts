@@ -9,13 +9,13 @@
  */
 
 import { createPublicClient, http, formatUnits, type PublicClient, type Address } from "viem";
-import { mainnet } from "viem/chains";
+import { mainnet, polygon } from "viem/chains";
 import { AAVE_POOL_ABI, AAVE_ORACLE_ABI } from "./abis.js";
 import {
-  AAVE_V3_POOL,
-  AAVE_V3_ORACLE,
   AAVE_BASE_CURRENCY_DECIMALS,
   AAVE_HF_DECIMALS,
+  getAavePoolAddress,
+  getAaveOracleAddress,
 } from "./constants.js";
 
 export interface RawAccountData {
@@ -39,10 +39,12 @@ export interface ParsedAccountData {
 
 export class AaveContractReader {
   private client: PublicClient;
+  private readonly chainId: string;
 
-  constructor(rpcUrl: string) {
+  constructor(rpcUrl: string, chainId: string = "ethereum") {
+    this.chainId = chainId;
     this.client = createPublicClient({
-      chain: mainnet,
+      chain: chainId === "polygon" ? polygon : mainnet,
       transport: http(rpcUrl),
     });
   }
@@ -53,7 +55,7 @@ export class AaveContractReader {
    */
   async getUserAccountData(user: string): Promise<RawAccountData> {
     const result = await this.client.readContract({
-      address: AAVE_V3_POOL as Address,
+      address: getAavePoolAddress(this.chainId) as Address,
       abi: AAVE_POOL_ABI,
       functionName: "getUserAccountData",
       args: [user as Address],
@@ -132,7 +134,7 @@ export class AaveContractReader {
    */
   async getAssetPrice(asset: string): Promise<number> {
     const price = await this.client.readContract({
-      address: AAVE_V3_ORACLE as Address,
+      address: getAaveOracleAddress(this.chainId) as Address,
       abi: AAVE_ORACLE_ABI,
       functionName: "getAssetPrice",
       args: [asset as Address],

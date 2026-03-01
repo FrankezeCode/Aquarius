@@ -13,6 +13,8 @@ import { registerAaveRoutes } from "./aave/index.js";
 import { registerUniswapRoutes } from "./uniswap/index.js";
 import { registerLidoRoutes } from "./lido/index.js";
 import { registerAaveRiskApiRoutes } from "./aave-risk/index.js";
+import { registerCopilotRoutes } from "./copilot/index.js";
+import { registerAgentEnrollmentRoutes } from "./agent-enrollment/index.js";
 
 export async function registerV1Routes(
   app: FastifyInstance,
@@ -24,4 +26,10 @@ export async function registerV1Routes(
 
   // ── API-as-a-Product: Public Aave Risk Intelligence endpoints ──────
   await app.register(registerAaveRiskApiRoutes, { prefix: "/aave-risk" });
+
+  // ── API-as-a-Product: Risk Co-Pilot endpoints (informational mode) ─
+  await app.register(registerCopilotRoutes, { prefix: "/copilot" });
+
+  // ── API-as-a-Product: Agent enrollment (phase A, in-memory) ─────────
+  await app.register(registerAgentEnrollmentRoutes, { prefix: "/agent-enrollment" });
 }

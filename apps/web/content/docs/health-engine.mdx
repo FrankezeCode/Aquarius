@@ -15,6 +15,17 @@ Two independent scores are produced:
 
 Both scores are deterministic, reproducible, and auditable. The optional AI layer interprets but never controls.
 
+## Chain Scope and Routing
+
+For Aave validation, the Health Engine is now chain-aware end-to-end.
+
+- **Current active chains:** `ethereum`, `polygon`
+- **Default when omitted:** `ethereum`
+- **Validation behavior:** unsupported chains are rejected at API boundary (`400`)
+- **Computation behavior:** cache keys and snapshot resolution are chain-scoped
+
+This prevents cross-chain cache bleed and ensures every score reflects the selected chain context.
+
 ## Three-Layer Scoring Pipeline
 
 ```mermaid
@@ -74,6 +85,8 @@ The protocol-level score assesses the aggregate risk posture of a protocol acros
 4. Map correlated dimensions to the four risk inputs (0–100 each)
 5. Compute the weighted composite score
 
+Chain is part of the protocol-health cache key and source path, so Ethereum and Polygon produce independent score timelines.
+
 **Response shape:**
 
 ```typescript
@@ -111,6 +124,8 @@ The user-level score assesses a specific wallet's position risk. It uses a penal
 2. Normalize health factor to a 0–100 base score
 3. Apply risk penalties (volatility, concentration, correlation)
 4. Compute final score as `Base - Penalties`, clamped 0–100
+
+User health now resolves on-chain position data by selected chain. If a wallet has no active position on the selected chain, the route returns a chain-specific not-found response rather than falling back to another chain.
 
 **Health factor normalization:**
 
@@ -218,6 +233,11 @@ Health scores are cached in-memory to prevent redundant recomputation on every r
 | User Health | 10 seconds | User positions can shift with each block |
 
 The cache uses a simple TTL-based eviction strategy with no external dependencies (no Redis required). Entries are lazily evicted on read.
+
+For chain-aware routing, cache keys include chain context:
+
+- `protocol:{protocol}:{chain}`
+- `user:{address}:{protocol}:{chain}`
 
 ## End-to-End System Flow
 

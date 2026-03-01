@@ -88,11 +88,15 @@ export interface ProjectedHFResponse {
   blocksAhead: number;
   confidence: number;
   breachBlock: number | null;
+  liquidationThreshold?: number | null;
+  priceDropToLiquidation?: number;
   riskVelocity: {
     slope: number;
     isAccelerating: boolean;
   };
   liquidationProbability: number;
+  interpretation?: string;
+  action?: string;
   timestamp: number;
 }
 
@@ -100,6 +104,7 @@ export interface ProjectedHFResponse {
 
 export type HealthCategory = "stable" | "watch" | "high_risk";
 export type MarketRegime = "normal" | "elevated" | "stressed";
+export type HealthFactorDirection = "up" | "down" | "neutral";
 
 export interface HealthScoreBreakdown {
   liquidity: number;
@@ -141,5 +146,27 @@ export interface UserHealthScore {
   reasoning: string;
   regime?: MarketRegime;
   dominantRisk?: string;
+  metadata: HealthScoreMetadata;
+  healthFactor?: number;
+  liquidationDistancePct?: number;
+  healthFactorDirection?: HealthFactorDirection;
+  mostExposedAsset?: string;
+  agentRecommendation?: string;
+}
+
+export interface UserRiskResponse {
+  user: string;
+  protocol: string;
+  score: number;
+  category: HealthCategory;
+  confidence: number;
+  reasoning: string;
+  regime?: MarketRegime;
+  dominantRisk?: string;
+  healthFactor: number;
+  healthFactorDirection: HealthFactorDirection;
+  liquidationDistancePct: number;
+  mostExposedAsset: string;
+  agentRecommendation: string;
   metadata: HealthScoreMetadata;
 }

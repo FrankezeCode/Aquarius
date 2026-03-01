@@ -47,6 +47,7 @@ export {
 
 // Section 7 — Enable Alerts CTA (Peak-End Rule)
 export { EnableAlertsCTA } from "./enable-alerts-cta";
+export { AgentEnrollmentModal } from "./agent-enrollment-modal";
 
 // Health Score Card
 export {
@@ -68,7 +69,14 @@ export { AdvancedRiskMetrics } from "./advanced-risk-metrics";
 export { StressSimulation } from "./stress-simulation";
 
 // Metric Insights Guide (Actionable Insights)
-export { MetricInsightsGuide } from "./metric-insights-guide";
+export { MetricInsightsGuide, MetricInsightsTrigger, MetricInsightsPanel } from "./metric-insights-guide";
+
+// User Position Card (unified position view)
+export { UserPositionCard, type UserPositionCardProps } from "./user-position-card";
+
+// Risk Co-Pilot (informational mode)
+export { RiskCopilotPanel } from "./risk-copilot-panel";
+export { FloatingRiskCopilot } from "./floating-risk-copilot";
 
 // Developer Footer
 export { DeveloperFooter } from "./developer-footer";

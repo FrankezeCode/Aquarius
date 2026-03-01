@@ -15,6 +15,9 @@ import type { ProjectedHFResponse } from "./types.js";
  * @param user - Ethereum address of the position owner
  * @param blocksAhead - How many blocks to project forward (default: 2)
  * @returns Projected HF, confidence, velocity, and liquidation probability
+ *
+ * Throws if the API returns non-2xx (including 503 when
+ * validation requires DATA_PROVIDER_MODE=tenderly).
  */
 export async function getProjectedHF(
   client: AquariusClient,

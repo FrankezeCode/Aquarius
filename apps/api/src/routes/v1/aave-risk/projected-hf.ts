@@ -12,7 +12,13 @@
  */
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { AaveContractReader } from "../../../infrastructure/aave/AaveContractReader.js";
+import { assertAaveValidationMode } from "./validation-guard.js";
+import {
+  fetchUserAccountData,
+  getActiveDataMode,
+} from "../../../services/health-engine/provider-data.js";
+import { normalizeEthereumAddress } from "./address-normalizer.js";
+import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
 
 const DEFAULT_BLOCKS_AHEAD = 2;
 const MIN_CONFIDENCE = 0.5;
@@ -23,25 +29,34 @@ export function createProjectedHFRoute() {
     app: FastifyInstance,
     _opts: FastifyPluginOptions
   ) {
-    app.get<{ Params: { user: string }; Querystring: { blocks?: string } }>(
+    app.get<{ Params: { user: string }; Querystring: { blocks?: string; chain?: string } }>(
       "/:user",
       async (request, reply) => {
+        if (!assertAaveValidationMode(reply)) return;
         const { user } = request.params;
+        const normalizedUser = normalizeEthereumAddress(user);
         const blocksAhead = parseInt(request.query.blocks ?? "2", 10);
+        const requestedChain = request.query.chain?.toLowerCase();
+        if (requestedChain && !isAaveActiveChain(requestedChain)) {
+          return reply.status(400).send({
+            error: "Unsupported chain",
+            message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+          });
+        }
+        const chain = resolveAaveActiveChain(requestedChain);
 
-        if (!user || !user.startsWith("0x")) {
+        if (!normalizedUser) {
           return reply.status(400).send({ error: "Invalid user address" });
         }
 
-        const rpcUrl = process.env.TENDERLY_RPC_URL || process.env.RPC_URL;
-        if (!rpcUrl) {
-          return reply.status(503).send({ error: "No RPC URL configured" });
-        }
-
         try {
-          const reader = new AaveContractReader(rpcUrl);
-          const raw = await reader.getUserAccountData(user);
-          const parsed = reader.parseAccountData(raw);
+          const parsed = await fetchUserAccountData(normalizedUser, chain);
+          if (!parsed) {
+            return reply.status(404).send({
+              error: "User position not found",
+              message: `No active Aave position found for ${normalizedUser} on ${chain} in DATA_PROVIDER_MODE=${getActiveDataMode()}.`,
+            });
+          }
 
           // Inline HF projection: linear extrapolation from oracle velocity
           const oracleVelocity = -0.5; // assumed declining
@@ -92,7 +107,7 @@ export function createProjectedHFRoute() {
               : "No action required.";
 
           return reply.send({
-            user,
+            user: normalizedUser,
             currentHF: parsed.healthFactor,
             projectedHF,
             blocksAhead,

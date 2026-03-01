@@ -90,7 +90,7 @@ Public risk endpoints do not require authentication in the current release. Rate
 
 ### Projected Health Factor
 
-<ApiEndpoint method="GET" path="/v1/aave-risk/projected-hf/:user" description="Projects health factor forward for a specific user address.">
+<ApiEndpoint method="GET" path="/v1/aave-risk/projected-hf/:user?chain=ethereum|polygon" description="Projects health factor forward for a specific user address.">
 
 **Path Parameters**
 
@@ -189,7 +189,7 @@ Public risk endpoints do not require authentication in the current release. Rate
 
 ### User Health Score
 
-<ApiEndpoint method="GET" path="/v1/aave-risk/user-health/:address" description="Returns a penalty-adjusted health score for a specific wallet address on Aave.">
+<ApiEndpoint method="GET" path="/v1/aave-risk/user-health/:address?chain=ethereum|polygon" description="Returns a penalty-adjusted health score for a specific wallet address on Aave.">
 
 **Path Parameters**
 
@@ -243,9 +243,51 @@ Public risk endpoints do not require authentication in the current release. Rate
 
 </ApiEndpoint>
 
+### User Risk (Unified Contract)
+
+<ApiEndpoint method="GET" path="/v1/aave-risk/user-risk/:address?chain=ethereum|polygon" description="Versioned unified user-risk projection for direct frontend card rendering and SDK consumption.">
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `address` | `string` | Valid Ethereum address (mixed/lowercase accepted, normalized server-side) |
+
+**Response**
+
+```json
+{
+  "user": "0x1234...abcd",
+  "protocol": "aave",
+  "score": 74,
+  "category": "watch",
+  "confidence": 0.82,
+  "reasoning": "Elevated liquidation risk is the primary concern.",
+  "regime": "elevated",
+  "dominantRisk": "liquidation risk",
+  "healthFactor": 1.42,
+  "healthFactorDirection": "down",
+  "liquidationDistancePct": 29.6,
+  "mostExposedAsset": "WETH",
+  "agentRecommendation": "Add collateral to restore a healthier liquidation buffer.",
+  "metadata": {
+    "block": null,
+    "timestamp": "2026-02-18T12:00:00.000Z",
+    "sources": ["on-chain-aave-v3", "oracle-feeds", "ai-context-engine", "data-provider:tenderly"]
+  }
+}
+```
+
+**Notes**
+
+- This endpoint is the preferred contract for user-facing risk cards.
+- `/v1/aave-risk/user-health/:address` remains supported for backward compatibility.
+
+</ApiEndpoint>
+
 ### Actionable Metrics
 
-<ApiEndpoint method="GET" path="/v1/aave-risk/actionable-metrics" description="Returns protocol-level metrics where every value includes interpretation and a recommended action.">
+<ApiEndpoint method="GET" path="/v1/aave-risk/actionable-metrics?chain=ethereum|polygon" description="Returns protocol-level metrics where every value includes interpretation and a recommended action.">
 
 **Response**
 
@@ -300,7 +342,7 @@ Public risk endpoints do not require authentication in the current release. Rate
 
 ### Stress Test
 
-<ApiEndpoint method="GET" path="/v1/aave-risk/stress-test/:user" description="Runs preset stress scenarios against a user's Aave position and returns projected health factors.">
+<ApiEndpoint method="GET" path="/v1/aave-risk/stress-test/:user?chain=ethereum|polygon" description="Runs preset stress scenarios against a user's Aave position and returns projected health factors.">
 
 **Path Parameters**
 
@@ -400,6 +442,56 @@ The CRE workflow endpoint returns escalation state as part of the `riskProgressi
 | `stageStability` | `string` | `"stable"`, `"transitioning"`, or `"escalating"` (optional) |
 | `timeline` | `array` | Chronological audit trail of escalation events (optional, max 20) |
 
+### Risk Co-Pilot Chat (Option A)
+
+<ApiEndpoint method="POST" path="/v1/copilot/chat" description="Informational, protocol-aware risk co-pilot endpoint grounded in deterministic Aquarius context.">
+
+**Request**
+
+```json
+{
+  "protocol": "aave",
+  "chain": "ethereum",
+  "walletAddress": "0x1234...abcd",
+  "question": "Why is my health factor dropping?",
+  "conversation": [
+    { "role": "user", "content": "What should I do now?" }
+  ]
+}
+```
+
+**Response**
+
+```json
+{
+  "mode": "informational",
+  "answer": "Your health factor is declining due to elevated collateral volatility.",
+  "whatItMeans": "Liquidation buffer is tightening if this trend continues.",
+  "recommendedActions": [
+    "Prioritize collateral buffer protection.",
+    "Use stress-test results before increasing leverage."
+  ],
+  "confidence": 0.83,
+  "limits": [
+    "Informational mode only. No execution is performed."
+  ],
+  "disclaimer": "Informational guidance only. Not financial advice.",
+  "contextTimestamp": 1708257600000,
+  "schemaVersion": "v1",
+  "toolRouter": { "available": false, "mode": "disabled_option_a" },
+  "intentEnvelope": { "available": false, "mode": "disabled_option_a" }
+}
+```
+
+**Constraints**
+
+- Co-pilot uses deterministic Aquarius context only.
+- No direct blockchain reads from the chat layer.
+- No transaction or CRE execution in Option A.
+- If context is missing or model fails, endpoint returns deterministic fallback guidance.
+
+</ApiEndpoint>
+
 ## Error Handling
 
 All endpoints return structured errors:
@@ -446,3 +538,129 @@ POST /internal/ingest/cre-webhook
 ```
 
 This endpoint processes CRE execution results and feeds them back into the risk intelligence pipeline for post-execution validation.
+
+## Agent Enrollment (Phase A + Phase B Hard-Fail)
+
+Agent enrollment supports a phased lifecycle:
+
+- **Phase A**: off-chain enrollment save (`pending_onchain`)
+- **Phase B**: strict on-chain wallet bind/deactivate on Tenderly (`bind-intent` + `confirm-bind`, `deactivate-intent` + `confirm-deactivate`)
+- Persistence now: in-memory (prototype validation; resets on API restart)
+- Channels now: Telegram mandatory (non-strict), Webhook optional
+
+### Wallet + Tenderly prerequisites
+
+- A real EVM wallet (MetaMask) must be connected in the web app on a supported chain (`ethereum`, `polygon`).
+- Tenderly RPC must be configured for the active chain via `TENDERLY_RPC_URL` / `TENDERLY_RPC_URL_*` (server) and `NEXT_PUBLIC_TENDERLY_RPC_URL` / `NEXT_PUBLIC_TENDERLY_RPC_URL_*` (web). Without these, Tenderly-backed endpoints and simulations may return `503`.
+
+### Phase A vs Phase B policy flow
+
+- **Phase A**: `/v1/agent-enrollment` saves enrollment draft only (no tx required).
+- **Phase B hard-fail**: activation/deactivation require MetaMask tx and finalize only after confirm endpoints succeed.
+
+### Binding lifecycle fields (additive, backward compatible)
+
+- `policyBindingStatus`: `pending_onchain | signing_requested | pending_tx | bound_onchain | bind_failed`
+- `policyBindingRef`: `string | null` (tx hash / reference)
+- `bindingChainId`: `number | null`
+- `bindingError`: `string | null`
+- `lastBindingAttemptAt`: `number | null`
+- `lastBindingIdempotencyKey`: `string | null`
+- `status`: `active | inactive`
+- `deactivationTxRef`: `string | null`
+- `deactivatedAt`: `number | null`
+- `deactivationError`: `string | null`
+- `lastDeactivationAttemptAt`: `number | null`
+
+### Endpoints
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment" description="Create or update wallet enrollment policy for alert-only, mitigation, or buffer-vault mode.">
+
+```json
+{
+  "walletAddress": "0x1234...abcd",
+  "chain": "ethereum",
+  "mode": "mitigate_agent",
+  "displayName": "Treasury Risk Desk",
+  "telegram": "@riskops_team",
+  "webhook": "https://example.com/aquarius/webhook"
+}
+```
+
+</ApiEndpoint>
+
+<ApiEndpoint method="GET" path="/v1/agent-enrollment/:wallet?chain=ethereum|polygon" description="Fetch enrollment policy for a wallet and chain context.">
+
+Returns `404` when no enrollment exists for the wallet+chain.
+
+</ApiEndpoint>
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment/validate-channels" description="Validate Telegram/Webhook channel payload before saving enrollment.">
+
+```json
+{
+  "telegram": "@riskops_team",
+  "webhook": "https://example.com/aquarius/webhook"
+}
+```
+
+</ApiEndpoint>
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment/bind-intent" description="Begin Phase B policy binding lifecycle. Idempotent by client-provided key.">
+
+```json
+{
+  "walletAddress": "0x1234...abcd",
+  "chain": "ethereum",
+  "chainId": 1,
+  "idempotencyKey": "2fb379d0-9c2d-4b33-9e44-c7890f8f8d2d"
+}
+```
+
+Notes:
+- Requires `PHASE_B_POLICY_BINDING=1`
+- Requires Tenderly validation mode (`DATA_PROVIDER_MODE=tenderly`, `AAVE_VALIDATION_REQUIRE_TENDERLY=1`)
+
+</ApiEndpoint>
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment/confirm-bind" description="Persist final Phase B bind status and tx metadata.">
+
+```json
+{
+  "walletAddress": "0x1234...abcd",
+  "chain": "ethereum",
+  "chainId": 1,
+  "idempotencyKey": "2fb379d0-9c2d-4b33-9e44-c7890f8f8d2d",
+  "txHash": "0x...",
+  "finalStatus": "bound_onchain"
+}
+```
+
+</ApiEndpoint>
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment/deactivate-intent" description="Begin full-disable deactivation intent. Requires Tenderly validation mode and feature flags.">
+
+```json
+{
+  "walletAddress": "0x1234...abcd",
+  "chain": "ethereum",
+  "chainId": 1,
+  "idempotencyKey": "76f89917-1604-4412-bfd8-68f6b95c4e70"
+}
+```
+
+</ApiEndpoint>
+
+<ApiEndpoint method="POST" path="/v1/agent-enrollment/confirm-deactivate" description="Persist final deactivation status and tx metadata.">
+
+```json
+{
+  "walletAddress": "0x1234...abcd",
+  "chain": "ethereum",
+  "chainId": 1,
+  "idempotencyKey": "76f89917-1604-4412-bfd8-68f6b95c4e70",
+  "txHash": "0x..."
+}
+```
+
+</ApiEndpoint>

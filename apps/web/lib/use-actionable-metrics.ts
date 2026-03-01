@@ -16,9 +16,9 @@ interface ActionableMetricsResponse {
   timestamp: number;
 }
 
-export function useActionableMetrics() {
+export function useActionableMetrics(chain: string = "ethereum") {
   const { data, error, isLoading } = useSWR<ActionableMetricsResponse>(
-    "/api/v1/aave-risk/actionable-metrics",
+    `/api/v1/aave-risk/actionable-metrics?chain=${encodeURIComponent(chain)}`,
     fetcher,
     { refreshInterval: 10_000, dedupingInterval: 5_000 },
   );

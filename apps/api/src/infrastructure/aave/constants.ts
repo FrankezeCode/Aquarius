@@ -7,6 +7,8 @@
 
 export const AAVE_V3_POOL = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" as const;
 export const AAVE_V3_ORACLE = "0x54586bE62E3c3580375aE3723C145253060Ca0C2" as const;
+export const AAVE_V3_POOL_POLYGON = "0x794a61358D6845594F94dc1DB02A252b5b4814aD" as const;
+export const AAVE_V3_ORACLE_POLYGON = "0xb023e699F5a33916Ea823A16485e259257cA8Bd1" as const;
 
 export const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" as const;
 export const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as const;
@@ -31,6 +33,29 @@ export const DEFAULT_TARGET_ADDRESSES: readonly string[] = [
   "0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296", // known whale
   "0xD275E5cb559D7A578C1B23c75Cd2F84A8B6E8EA5", // Aave governance whale
 ];
+
+/**
+ * Polygon addresses can be overridden over time with known active Aave V3 users.
+ * We default to the Ethereum scan list as a deterministic baseline so routing
+ * and scoring still remain chain-scoped even when sample discovery is sparse.
+ */
+export const DEFAULT_TARGET_ADDRESSES_POLYGON: readonly string[] = [
+  ...DEFAULT_TARGET_ADDRESSES,
+];
+
+export function getAavePoolAddress(chainId: string): string {
+  return chainId === "polygon" ? AAVE_V3_POOL_POLYGON : AAVE_V3_POOL;
+}
+
+export function getAaveOracleAddress(chainId: string): string {
+  return chainId === "polygon" ? AAVE_V3_ORACLE_POLYGON : AAVE_V3_ORACLE;
+}
+
+export function getDefaultTargetAddresses(chainId: string): readonly string[] {
+  return chainId === "polygon"
+    ? DEFAULT_TARGET_ADDRESSES_POLYGON
+    : DEFAULT_TARGET_ADDRESSES;
+}
 
 /**
  * Aave uses 8 decimal precision for base currency amounts (USD).

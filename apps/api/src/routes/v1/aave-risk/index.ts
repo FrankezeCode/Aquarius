@@ -10,6 +10,8 @@
  *   GET /:chain/health                 → RiskHealthDTO
  *   GET /liquidation-pressure          → LiquidationPressureDTO (default: ethereum)
  *   GET /:chain/liquidation-pressure   → LiquidationPressureDTO
+ *   GET /user-health/:address          → Legacy user health score
+ *   GET /user-risk/:address            → Unified user-risk projection (preferred)
  */
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
@@ -20,6 +22,7 @@ import { createLiquidationPressureRoute } from "./liquidation-pressure.js";
 import { createProjectedHFRoute } from "./projected-hf.js";
 import { createProtocolHealthRoute } from "./protocol-health.js";
 import { createUserHealthRoute } from "./user-health.js";
+import { createUserRiskRoute } from "./user-risk.js";
 import { createActionableMetricsRoute } from "./actionable-metrics.js";
 import { createStressTestRoute } from "./stress-test.js";
 
@@ -49,6 +52,7 @@ export async function registerAaveRiskApiRoutes(
   // Health Score endpoints
   await app.register(createProtocolHealthRoute(), { prefix: "/protocol-health" });
   await app.register(createUserHealthRoute(), { prefix: "/user-health" });
+  await app.register(createUserRiskRoute(), { prefix: "/user-risk" });
 
   // Actionable metrics and stress testing
   await app.register(createActionableMetricsRoute(), { prefix: "/actionable-metrics" });

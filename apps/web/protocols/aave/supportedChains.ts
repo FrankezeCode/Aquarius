@@ -6,17 +6,8 @@
  */
 
 export const AAVE_SUPPORTED_CHAINS = [
-  "polygon",
   "ethereum",
-  "arbitrum",
-  "optimism",
-  "base",
-  "avalanche",
-  "fantom",
-  "scroll",
-  "zksync",
-  "linea",
-  "bnb",
+  "polygon",
 ] as const;
 
 export type AaveSupportedChain = (typeof AAVE_SUPPORTED_CHAINS)[number];

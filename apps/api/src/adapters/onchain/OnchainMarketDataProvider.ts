@@ -14,18 +14,20 @@ import type { IMarketDataProvider } from "../../domain/ports/IMarketDataProvider
 import type { PositionSnapshot } from "../../domain/models/PositionSnapshot.js";
 import { AaveContractReader } from "../../infrastructure/aave/AaveContractReader.js";
 import { toPositionSnapshots } from "../../infrastructure/aave/mapper.js";
-import { DEFAULT_TARGET_ADDRESSES } from "../../infrastructure/aave/constants.js";
+import { getDefaultTargetAddresses } from "../../infrastructure/aave/constants.js";
 
 export class OnchainMarketDataProvider implements IMarketDataProvider {
-  private reader: AaveContractReader;
+  private readonly rpcUrl: string;
+  private readonly rpcUrlResolver?: (chainId: string) => string | null;
 
-  constructor(rpcUrl: string) {
+  constructor(rpcUrl: string, rpcUrlResolver?: (chainId: string) => string | null) {
     if (!rpcUrl) {
       throw new Error(
         "OnchainMarketDataProvider requires RPC_URL to be set."
       );
     }
-    this.reader = new AaveContractReader(rpcUrl);
+    this.rpcUrl = rpcUrl;
+    this.rpcUrlResolver = rpcUrlResolver;
   }
 
   async fetchPositionSnapshots(
@@ -36,9 +38,11 @@ export class OnchainMarketDataProvider implements IMarketDataProvider {
       `[onchain-provider] Fetching real Aave V3 positions from mainnet (chain=${chainId}, limit=${limit})`
     );
 
-    const targetAddresses = DEFAULT_TARGET_ADDRESSES.slice(0, limit);
+    const rpcUrl = this.rpcUrlResolver?.(chainId) ?? this.rpcUrl;
+    const reader = new AaveContractReader(rpcUrl, chainId);
+    const targetAddresses = getDefaultTargetAddresses(chainId).slice(0, limit);
 
-    const parsed = await this.reader.getPositionsForUsers(
+    const parsed = await reader.getPositionsForUsers(
       targetAddresses as string[]
     );
 

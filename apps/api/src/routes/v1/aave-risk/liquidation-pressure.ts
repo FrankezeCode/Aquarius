@@ -19,6 +19,7 @@ import {
   DEFAULT_CHAIN,
   type Chain,
 } from "../../../protocols/shared/types/risk-api.types.js";
+import { assertAaveValidationMode } from "./validation-guard.js";
 
 export function createLiquidationPressureRoute(
   queryService: RiskQueryService,
@@ -32,6 +33,7 @@ export function createLiquidationPressureRoute(
     app.get<{
       Params: { chain?: string };
     }>("/:chain", async (request, reply) => {
+      if (!assertAaveValidationMode(reply)) return;
       const rawChain = request.params.chain ?? DEFAULT_CHAIN;
       if (!VALID_CHAINS.has(rawChain)) {
         return reply.status(400).send({
@@ -39,6 +41,14 @@ export function createLiquidationPressureRoute(
           validChains: [...VALID_CHAINS],
         });
       }
+      await queryService.awaitRefresh(protocol, rawChain as Chain);
+      if (!queryService.hasSnapshot(protocol, rawChain as Chain)) {
+        return reply.status(503).send({
+          error: "Snapshot unavailable",
+          message: "Unable to fetch live Aave snapshot from configured data provider.",
+        });
+      }
+
       const data = queryService.getLiquidationPressure(
         protocol,
         rawChain as Chain
@@ -48,6 +58,14 @@ export function createLiquidationPressureRoute(
 
     // GET / (backward compatible — defaults to ethereum)
     app.get("/", async (_request, reply) => {
+      if (!assertAaveValidationMode(reply)) return;
+      await queryService.awaitRefresh(protocol, DEFAULT_CHAIN);
+      if (!queryService.hasSnapshot(protocol, DEFAULT_CHAIN)) {
+        return reply.status(503).send({
+          error: "Snapshot unavailable",
+          message: "Unable to fetch live Aave snapshot from configured data provider.",
+        });
+      }
       const data = queryService.getLiquidationPressure(
         protocol,
         DEFAULT_CHAIN

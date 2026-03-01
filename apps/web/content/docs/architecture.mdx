@@ -100,6 +100,102 @@ Data flows through Aquarius in a unidirectional pipeline:
 Steps 1-5 complete in under 100ms (excluding optional LLM reasoning). The deterministic path never depends on or waits for the LLM layer.
 </Callout>
 
+## Risk Co-Pilot (Option A)
+
+Aquarius now supports an informational **Risk Co-Pilot** for Aave that is strictly grounded in deterministic context.
+
+- Scope: read + explain only
+- Chains: `ethereum`, `polygon`
+- Execution: disabled in this mode
+- LLM role: interpretation layer only
+
+The co-pilot uses the existing risk APIs and orchestration state as context input. It does not compute protocol math and does not read blockchain data directly.
+
+```mermaid
+flowchart LR
+  userInput[UserQuestion] --> copilotApi[CopilotChatAPI]
+  copilotApi --> contextAssembler[DeterministicContextAssembler]
+  contextAssembler --> riskSources[UserRiskProtocolHealthEscalation]
+  contextAssembler --> advisoryLlm[AdvisoryLLMLayer]
+  advisoryLlm --> structuredReply[StructuredAdvisoryResponse]
+  structuredReply --> riskUi[RiskCopilotPanel]
+```
+
+Upgrade seams are preserved for later phases:
+
+- `toolRouter` reserved for Option B simulation tools
+- `intentEnvelope` reserved for Option C confirmed execution flow
+- response schema versioned (`v1`) for non-breaking evolution
+
+## Agent Enrollment (Phase A + Phase B Hard-Fail)
+
+Aquarius supports a phased enrollment architecture from the Aave CTA (`Employ Aqua Agents`) with stable API contracts.
+
+- Storage now: in-memory enrollment store (prototype validation)
+- Supported channels now: Telegram mandatory (non-strict), Webhook optional
+- Policy modes now: `alert_only`, `mitigate_agent`, `buffer_vault`
+- Binding lifecycle now:
+  - `pending_onchain`
+  - `signing_requested`
+  - `pending_tx`
+  - `bound_onchain`
+  - `bind_failed`
+
+Architecture seam for infra-grade upgrade is preserved through service-port abstraction:
+
+- `AgentEnrollmentService` (application logic)
+- `EnrollmentStorePort` (storage contract)
+- `InMemoryEnrollmentStore` (Phase A adapter)
+
+Phase B hard-fail is additive: wallet signing and on-chain activation/deactivation are introduced without breaking existing read contracts.
+
+### Wallet + Tenderly prerequisites and policy signing path
+
+- The `Employ Aqua Agents` CTA requires MetaMask on a supported chain and Tenderly RPC configured for that chain.
+- Phase B is gated behind:
+  - `PHASE_B_POLICY_BINDING=1`
+  - `NEXT_PUBLIC_PHASE_B_POLICY_BINDING=1`
+  - `DATA_PROVIDER_MODE=tenderly`
+  - `AAVE_VALIDATION_REQUIRE_TENDERLY=1`
+- Enrollment flow in Phase B:
+  - start bind intent (`/v1/agent-enrollment/bind-intent`)
+  - wallet signs/submits tx (MetaMask popup)
+  - confirm bind (`/v1/agent-enrollment/confirm-bind`)
+  - start deactivate intent (`/v1/agent-enrollment/deactivate-intent`)
+  - wallet signs/submits tx (MetaMask popup)
+  - confirm deactivate (`/v1/agent-enrollment/confirm-deactivate`)
+- On any signing/tx failure, operation fails closed and does not finalize activation/deactivation state transitions.
+
+## Chain-Aware Execution Context
+
+Aquarius now treats chain selection as a first-class execution context for Aave risk paths.
+
+- **Active validation scope (today):** `ethereum`, `polygon`
+- **Architecture posture (future):** chain-extensible by configuration, not rewrite
+- **Boundary contract:** one shared chain schema at API/web boundary
+- **Runtime behavior:** chain-specific infra resolution (RPC, addresses, readers)
+
+This preserves DDD boundaries:
+
+- **Domain/Application:** chain-aware orchestration and normalized contracts
+- **Infrastructure:** per-chain adapters and endpoint/address resolution
+- **Frontend:** pure consumer of chain-scoped API responses
+
+```mermaid
+flowchart LR
+  chainToggle[ChainToggle] --> chainState[ProtocolChainContext]
+  chainState --> webHooks[WebHooksChainParam]
+  webHooks --> apiRoutes[FastifyRoutesChainValidated]
+  apiRoutes --> providerFactory[ProviderFactoryModeAndChain]
+  providerFactory --> chainInfra[ChainSpecificRpcAndAaveAddresses]
+  chainInfra --> scoring[HealthAndCreScoring]
+  scoring --> ui[ChainScopedUiMetrics]
+```
+
+<Callout type="warning" title="Shared Contract vs Shared Runtime">
+"Shared chain contract" means shared request/response schema and validation only. It does not mean shared RPC clients or shared chain addresses. Runtime remains chain-specific for correctness and latency.
+</Callout>
+
 ## Key Design Decisions
 
 ### Why Fastify for the API?

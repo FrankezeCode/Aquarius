@@ -110,6 +110,16 @@ export interface UserHealthScore {
   dominantRisk?: string;
   /** Score metadata. */
   metadata: HealthScoreMetadata;
+  /** Current Aave position health factor (when available). */
+  healthFactor?: number;
+  /** Liquidation distance percentage (when available). */
+  liquidationDistancePct?: number;
+  /** Directional health trend indicator. */
+  healthFactorDirection?: HealthFactorDirection;
+  /** Most exposed asset symbol (deterministic fallback when unavailable). */
+  mostExposedAsset?: string;
+  /** Deterministic recommendation for immediate action. */
+  agentRecommendation?: string;
 }
 
 export interface UserHealthPenalties {
@@ -119,6 +129,29 @@ export interface UserHealthPenalties {
   concentration: number;
   /** Penalty from correlated collateral. */
   correlation: number;
+}
+
+export type HealthFactorDirection = "up" | "down" | "neutral";
+
+/**
+ * Unified user-risk projection for API/SDK/UI consumption.
+ * Versioned endpoint contract designed for frontend cards.
+ */
+export interface UserRiskResponse {
+  user: string;
+  protocol: string;
+  score: number;
+  category: HealthCategory;
+  confidence: number;
+  reasoning: string;
+  regime?: MarketRegime;
+  dominantRisk?: string;
+  healthFactor: number;
+  healthFactorDirection: HealthFactorDirection;
+  liquidationDistancePct: number;
+  mostExposedAsset: string;
+  agentRecommendation: string;
+  metadata: HealthScoreMetadata;
 }
 
 // ── AI Context Layer (Layer 2) ──────────────────────────────────────

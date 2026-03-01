@@ -20,7 +20,7 @@ export function DeveloperFooter({ className }: DeveloperFooterProps) {
       )}
     >
       <Link
-        href="/sdk"
+        href="/docs/sdk"
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         Integrate Aquarius via selvä SDK →

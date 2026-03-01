@@ -26,9 +26,11 @@ export interface StressTestData {
   timestamp: number;
 }
 
-export function useStressTest(userAddress: string | null) {
+export function useStressTest(userAddress: string | null, chain: string = "ethereum") {
   const { data, error, isLoading } = useSWR<StressTestData>(
-    userAddress ? `/api/v1/aave-risk/stress-test/${userAddress}` : null,
+    userAddress
+      ? `/api/v1/aave-risk/stress-test/${userAddress}?chain=${encodeURIComponent(chain)}`
+      : null,
     fetcher,
     { refreshInterval: 30_000, dedupingInterval: 10_000 },
   );

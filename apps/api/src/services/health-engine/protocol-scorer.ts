@@ -9,11 +9,11 @@
 
 import type { ProtocolHealthScore, RiskInputs } from "@aquarius/types";
 import {
-  fetchPositionSnapshots,
   deriveChainMetrics,
 } from "../../protocols/aave/risk-intelligence/signals.js";
 import { correlateSignals } from "../../protocols/aave/risk-intelligence/correlator.js";
 import { calculateHealthScore, buildBreakdown } from "./scoring.js";
+import { fetchAaveSnapshots, getActiveDataMode } from "./provider-data.js";
 
 /**
  * Compute protocol-level health score for Aave.
@@ -25,9 +25,10 @@ export async function computeProtocolHealth(
   protocol: string,
   chainId: string = "ethereum"
 ): Promise<ProtocolHealthScore & { _riskInputs: RiskInputs }> {
-  const positions = await fetchPositionSnapshots(chainId, 50);
+  const positions = await fetchAaveSnapshots(chainId, 50);
   const metrics = deriveChainMetrics(chainId, positions);
   const assessment = correlateSignals(chainId, positions, metrics);
+  const dataMode = getActiveDataMode();
 
   const riskInputs: RiskInputs = {
     volatility: Math.round(
@@ -68,6 +69,7 @@ export async function computeProtocolHealth(
         "on-chain-aave-v3",
         "position-snapshots",
         "risk-correlator",
+        `data-provider:${dataMode}`,
       ],
     },
     _riskInputs: riskInputs,

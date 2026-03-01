@@ -290,34 +290,78 @@ function InsightCard({ insight }: { insight: MetricInsight }) {
   );
 }
 
-export function MetricInsightsGuide({ className }: { className?: string }) {
-  const [isOpen, setIsOpen] = useState(false);
+export function MetricInsightsTrigger({
+  isOpen,
+  onToggle,
+  className,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  if (isOpen) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn("flex w-full items-center justify-between text-left", className)}
+    >
+      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+        Actionable Insights
+      </h3>
+      <span className="text-xs text-muted-foreground/60">
+        ▶ What Do These Metrics Mean?
+      </span>
+    </button>
+  );
+}
+
+export function MetricInsightsPanel({
+  isOpen,
+  onToggle,
+  className,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  if (!isOpen) return null;
 
   return (
     <section className={cn("space-y-3", className)} aria-label="Metric Insights Guide">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between text-left"
-      >
-        <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Actionable Insights
-        </h3>
-        <span className="text-xs text-muted-foreground/60">
-          {isOpen ? "▼" : "▶"} What Do These Metrics Mean?
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="rounded-xl border border-border bg-card/50 p-4 space-y-2 max-h-[600px] overflow-y-auto">
-          <p className="text-xs text-muted-foreground/60 pb-2 border-b border-border/30">
-            Every metric on this page drives a decision — for users, institutions, or automated agents. Expand any metric below to understand what it means and what to do.
-          </p>
-          {METRIC_INSIGHTS.map((insight) => (
-            <InsightCard key={insight.metric} insight={insight} />
-          ))}
+      <div className="rounded-xl border border-border bg-card/50 p-4 space-y-2 max-h-[600px] overflow-y-auto">
+        <div className="flex items-center justify-between pb-2 border-b border-border/30">
+          <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+            Actionable Insights
+          </h3>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
+          >
+            ▼ Collapse
+          </button>
         </div>
-      )}
+        <p className="text-xs text-muted-foreground/60">
+          Every metric on this page drives a decision — for users, institutions, or automated agents. Expand any metric below to understand what it means and what to do.
+        </p>
+        {METRIC_INSIGHTS.map((insight) => (
+          <InsightCard key={insight.metric} insight={insight} />
+        ))}
+      </div>
     </section>
+  );
+}
+
+export function MetricInsightsGuide({ className }: { className?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const toggle = () => setIsOpen((prev) => !prev);
+
+  return (
+    <>
+      <MetricInsightsTrigger isOpen={isOpen} onToggle={toggle} className={className} />
+      <MetricInsightsPanel isOpen={isOpen} onToggle={toggle} className={className} />
+    </>
   );
 }

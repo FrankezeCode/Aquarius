@@ -27,6 +27,8 @@ export type {
   HealthScoreMetadata,
   UserHealthScore,
   UserHealthPenalties,
+  HealthFactorDirection,
+  UserRiskResponse,
   MarketRegime,
   AIContextInput,
   AIContextResult,

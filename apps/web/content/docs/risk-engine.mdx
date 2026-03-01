@@ -10,6 +10,17 @@ The Risk Intelligence Engine is the analytical core of Aquarius. It continuously
 
 Unlike generic monitoring tools that check thresholds, the Risk Engine understands **protocol-specific risk semantics** — what a health factor means on Aave, how impermanent loss accumulates on Uniswap, and how validator exposure creates risk on Lido.
 
+## Active Chain Validation Profile
+
+Aave risk endpoints and CRE monitoring are now chain-scoped for the selected network context.
+
+- **Active execution scope:** `ethereum`, `polygon`
+- **Default chain:** `ethereum`
+- **Unsupported chain behavior:** explicit `400` at request boundary
+- **Route-level chain passthrough:** protocol health, user risk, projected HF, stress test, actionable metrics, and CRE run
+
+This enforces deterministic chain isolation for risk metrics while preserving a future-extensible adapter model.
+
 ## Risk Computation Pipeline
 
 ```mermaid
@@ -42,6 +53,12 @@ export class EventRouter {
   }
 }
 ```
+
+For chain-aware execution, provider routing resolves both mode and chain before ingestion:
+
+- `DATA_PROVIDER_MODE` chooses adapter family (`mock`, `tenderly`, `onchain`, `realtime`)
+- chain context (`ethereum`/`polygon`) chooses RPC endpoint + Aave address set
+- normalized snapshots are emitted with chain identifier preserved through scoring
 
 ### Stage 2: Normalization
 
@@ -306,3 +323,20 @@ Every actionable metric includes:
 | Stress Simulation Results | Whether a position survives specific market scenarios |
 
 Metrics that are purely informational (e.g., latency numbers, decorative badges, duplicate status indicators) are either placed behind a developer mode toggle or removed entirely.
+
+## Informational Co-Pilot (Option A)
+
+The Risk Co-Pilot is an informational interpretation layer over deterministic risk outputs.
+
+- It **does not** compute risk math.
+- It **does not** fetch blockchain state directly.
+- It **does not** execute actions.
+
+The co-pilot consumes:
+
+- Unified user-risk projection
+- Protocol health summary
+- Escalation/risk progression state
+- Chain context (`ethereum` or `polygon`)
+
+If model inference is unavailable, Aquarius returns deterministic fallback guidance with explicit limits. This preserves reliability while keeping the deterministic risk engine as the source of truth.

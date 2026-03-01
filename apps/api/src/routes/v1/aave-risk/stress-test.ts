@@ -10,7 +10,13 @@
  */
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { AaveContractReader } from "../../../infrastructure/aave/AaveContractReader.js";
+import { assertAaveValidationMode } from "./validation-guard.js";
+import {
+  fetchUserAccountData,
+  getActiveDataMode,
+} from "../../../services/health-engine/provider-data.js";
+import { normalizeEthereumAddress } from "./address-normalizer.js";
+import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
 
 interface StressScenario {
   name: string;
@@ -52,22 +58,31 @@ export function createStressTestRoute() {
     app: FastifyInstance,
     _opts: FastifyPluginOptions,
   ) {
-    app.get<{ Params: { user: string } }>("/:user", async (request, reply) => {
+    app.get<{ Params: { user: string }; Querystring: { chain?: string } }>("/:user", async (request, reply) => {
+      if (!assertAaveValidationMode(reply)) return;
       const { user } = request.params;
+      const normalizedUser = normalizeEthereumAddress(user);
+      const requestedChain = request.query.chain?.toLowerCase();
+      if (requestedChain && !isAaveActiveChain(requestedChain)) {
+        return reply.status(400).send({
+          error: "Unsupported chain",
+          message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+        });
+      }
+      const chain = resolveAaveActiveChain(requestedChain);
 
-      if (!user || !user.startsWith("0x")) {
+      if (!normalizedUser) {
         return reply.status(400).send({ error: "Invalid user address" });
       }
 
-      const rpcUrl = process.env.TENDERLY_RPC_URL || process.env.RPC_URL;
-      if (!rpcUrl) {
-        return reply.status(503).send({ error: "No RPC URL configured" });
-      }
-
       try {
-        const reader = new AaveContractReader(rpcUrl);
-        const raw = await reader.getUserAccountData(user);
-        const parsed = reader.parseAccountData(raw);
+        const parsed = await fetchUserAccountData(normalizedUser, chain);
+        if (!parsed) {
+          return reply.status(404).send({
+            error: "User position not found",
+            message: `No active Aave position found for ${normalizedUser} on ${chain} in DATA_PROVIDER_MODE=${getActiveDataMode()}.`,
+          });
+        }
 
         const scenarioKeys = ["eth_drop_10", "eth_drop_20", "depeg_usdc"] as const;
         const scenarios = scenarioKeys.map((key) => {
@@ -96,7 +111,7 @@ export function createStressTestRoute() {
           : "No action required. Position is resilient.";
 
         return reply.send({
-          user,
+          user: normalizedUser,
           currentHF: parsed.healthFactor,
           scenarios,
           interpretation,

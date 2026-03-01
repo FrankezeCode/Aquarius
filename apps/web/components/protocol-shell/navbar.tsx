@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Waves, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProtocolDropdown } from "@/components/navigation";
 import { protocolMeta } from "@/lib/protocol-meta";
@@ -36,10 +37,14 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Waves className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-            </div>
+            <Image
+              src="/brand/aqua-logo-white.png.png"
+              alt="Aquarius logo"
+              width={32}
+              height={32}
+              className="h-8 w-8 object-contain transition-transform group-hover:scale-110"
+              priority
+            />
             <span className="text-xl font-semibold tracking-tight">
               Aquarius
             </span>

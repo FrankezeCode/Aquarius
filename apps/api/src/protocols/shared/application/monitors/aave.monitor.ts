@@ -29,6 +29,10 @@ import type { MonitorSnapshot } from "../../types/monitor-snapshot.types.js";
 import type { RiskMonitor } from "./risk-monitor.port.js";
 import { runMonitor } from "../../../aave/risk-intelligence/monitor.js";
 import { dispatchCrossChainRisk } from "../../../aave/ccip/sender.js";
+import {
+  createMarketDataProvider,
+  getTenderlyValidationError,
+} from "../../../../adapters/providerFactory.js";
 
 /**
  * Derive liquidation pressure from the Aave risk dimensions.
@@ -45,7 +49,14 @@ function deriveLiquidationPressure(
 
 export class AaveMonitor implements RiskMonitor {
   async run(chain: Chain): Promise<MonitorSnapshot> {
-    const result = await runMonitor(chain);
+    const validationError = getTenderlyValidationError();
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const provider = createMarketDataProvider();
+    const positions = await provider.fetchPositionSnapshots(chain, 50);
+    const result = await runMonitor(chain, positions);
 
     // ── CCIP side-effect (fire-and-forget, non-blocking) ──────────
     // If the domain emitted a cross-chain signal, dispatch it here
