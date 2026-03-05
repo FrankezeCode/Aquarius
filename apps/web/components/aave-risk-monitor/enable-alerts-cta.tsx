@@ -92,7 +92,7 @@ export function EnableAlertsCTA({
             </div>
 
             <div className="mt-8 flex flex-col gap-6">
-              {isEnabled ? (
+      {isEnabled ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-6 py-3">
                     <span className="text-base">✓</span>
@@ -108,16 +108,16 @@ export function EnableAlertsCTA({
                   >
                     {isDeactivating ? "Deactivating..." : "Deactivate"}
                   </Button>
-                </div>
-              ) : (
+        </div>
+      ) : (
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    size="lg"
+        <Button
+          size="lg"
                     onClick={onEmployAgent}
                     className="h-12 w-fit rounded-full bg-white px-8 text-sm font-semibold tracking-[0.02em] text-[#050505] hover:bg-[#e0e0e0]"
-                  >
+        >
                     {isInactive ? "Re-activate Aqua Agents" : "Employ Aqua Agents"}
-                  </Button>
+        </Button>
                   {isInactive && (
                     <span className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
                       Agent fully disabled
