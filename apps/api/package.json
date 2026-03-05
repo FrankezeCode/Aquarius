@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/apps/api/src/server.js",
     "test": "cross-env NODE_ENV=test node --import tsx --test tests/**/*.test.ts",
     "clean": "rm -rf dist"
   },

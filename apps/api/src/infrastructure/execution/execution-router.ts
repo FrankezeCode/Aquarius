@@ -128,9 +128,14 @@ export class ExecutionRouter implements ExecutionPort {
       type: template.type,
       user: (context.payload as Record<string, string>)?.user ?? "unknown",
       chainId: (context.payload as Record<string, string>)?.chainId ?? "1",
+      protocol: (context.payload as Record<string, string>)?.protocol ?? "aave",
       asset: (context.payload as Record<string, string>)?.asset ?? "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-      amount: template.amountValue,
-      reason: `Auto-escalation: ${riskType} → ${template.type}`,
+      amount: String(template.amountValue),
+      preHealthFactor: context.riskLevel === "CRITICAL" ? 1.02 : 1.2,
+      targetHealthFactor: context.riskLevel === "CRITICAL" ? 1.25 : 1.5,
+      riskScore: context.riskLevel === "CRITICAL" ? 90 : context.riskLevel === "HIGH" ? 70 : 50,
+      riskBand: riskType,
+      agentId: context.agentId,
       timestamp: Date.now(),
     };
 

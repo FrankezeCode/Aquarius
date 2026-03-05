@@ -4,7 +4,12 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../..",
+    "baseUrl": ".",
+    "paths": {
+      "@aquarius/types": ["../../packages/types/index.ts"],
+      "@aquarius/types/*": ["../../packages/types/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

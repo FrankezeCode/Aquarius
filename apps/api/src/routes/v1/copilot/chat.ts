@@ -30,6 +30,7 @@ export function createCopilotChatRoute() {
       const walletAddress = body.walletAddress
         ? normalizeEthereumAddress(body.walletAddress)
         : undefined;
+      const normalizedWalletAddress = walletAddress ?? undefined;
 
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/0214f521-f1e1-4237-8c5f-e3cdc61c7a1b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'551096'},body:JSON.stringify({sessionId:'551096',runId:'pre-fix',hypothesisId:'H2',location:'apps/api/src/routes/v1/copilot/chat.ts:34',message:'Wallet normalization output type',data:{hasInput:!!body.walletAddress,walletAddressType:typeof walletAddress,walletAddressIsNull:walletAddress===null},timestamp:Date.now()})}).catch(()=>{});
@@ -46,7 +47,7 @@ export function createCopilotChatRoute() {
         const context = await contextAssembler.assemble({
           protocol: body.protocol,
           chain: body.chain,
-          walletAddress,
+          walletAddress: normalizedWalletAddress,
         });
 
         const response = await advisoryAgent.advise({
