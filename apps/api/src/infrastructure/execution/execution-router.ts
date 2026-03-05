@@ -119,6 +119,10 @@ export class ExecutionRouter implements ExecutionPort {
 
     const template = templates[0]!;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/0214f521-f1e1-4237-8c5f-e3cdc61c7a1b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'551096'},body:JSON.stringify({sessionId:'551096',runId:'pre-fix',hypothesisId:'H1',location:'apps/api/src/infrastructure/execution/execution-router.ts:122',message:'Preparing mitigation intent payload types',data:{amountValueType:typeof template.amountValue,chainIdType:typeof (context.payload as Record<string, string>)?.chainId},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
     const intent: MitigationIntent = {
       id: `mitigation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: template.type,

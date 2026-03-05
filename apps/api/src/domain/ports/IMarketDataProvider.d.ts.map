@@ -1,0 +1,1 @@
+{"version":3,"file":"IMarketDataProvider.d.ts","sourceRoot":"","sources":["IMarketDataProvider.ts"],"names":[],"mappings":"AAAA;;;;;;;GAOG;AAEH,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,+BAA+B,CAAC;AAEtE,MAAM,WAAW,mBAAmB;IAClC,sBAAsB,CACpB,OAAO,EAAE,MAAM,EACf,KAAK,EAAE,MAAM,GACZ,OAAO,CAAC,gBAAgB,EAAE,CAAC,CAAC;CAChC"}
