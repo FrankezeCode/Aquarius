@@ -1,6 +1,9 @@
 # Aquarius Risk Intelligence Protocol (AQUARIUS)
 **Autonomous, protocol-aware real-time risk intelligence and mitigation infrastructure for DeFi - built on a Chainlink-oriented orchestration stack.**
 
+Built with love ❤️ for users, developers, and automated systems.
+In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b>.
+
 <p align="center">
   <a href="https://aquarius-web.vercel.app/">
     <img width="100%" alt="aquarius-landing page" src="https://github.com/user-attachments/assets/25908e99-67f0-469c-a8ed-3f4e76837bde" />
@@ -50,6 +53,10 @@
 - [Future Developments](#future-developments)
 - [Challenges We Ran Into](#challenges-we-ran-into)
 - [Frontend](#frontend)
+- [Builder’s Note](#builders-note)
+- [Gratitude & Acknowledgments](#gratitude--acknowledgments)
+- [Dedication](#dedication)
+- [😀 Fun Fact](#fun-fact-)
 
 ## Overview
 
@@ -422,3 +429,133 @@ Key implementation surfaces:
 - `apps/web/components/aave-risk-monitor/risk-copilot-panel.tsx`
 - `apps/web/lib/use-risk-copilot.ts`
 - `apps/web/lib/use-health-score.ts`
+  
+
+## Builder’s Note
+
+Building Aquarius was never only about DeFi.
+This project is simply one expression of a belief I have carried for most of my life.
+
+Growing up in a developing country where insecurity and instability were part of daily life, chaos was the environment I knew best. It was everywhere — in the news, in the streets, in the uncertainty of the future.
+
+But in the middle of that disorder, I began to notice something interesting.
+
+There were always patterns.
+
+Even when events felt overwhelming and unpredictable, I felt that chaos might not actually be random. I often told my mom:
+
+> “No matter how big chaos becomes, it can still be managed.”
+
+
+
+That idea stayed with me for years. I started imagining systems, models, and mathematical ways of understanding complex situations. I believed that with the right tools and intelligence, even large systems of uncertainty could be monitored, understood, and controlled.
+
+When ChatGPT was released, it felt like a missing piece of that puzzle.
+The idea that machines could assist human reasoning at scale opened a completely new dimension of possibilities.
+
+Around that time, I came across the story of Miki Endo.
+
+She was a 24-year-old crisis management official in Minamisanriku during the 2011 Tōhoku earthquake and tsunami. As the tsunami approached, she stayed at her microphone broadcasting warnings to residents, urging them to evacuate.
+
+She continued broadcasting until the very end.
+
+Thousands of people survived because of that voice.
+
+When I read her story, I couldn’t stop wondering what must have been going through her mind in those final moments — knowing the danger was coming, yet choosing to keep helping others.
+
+And I thought:
+
+What if systems existed that could help people like her?
+
+What if intelligent agents could continue critical operations automatically — allowing humans to step away from danger while the system continues protecting others?
+
+That idea deeply influenced how I think about technology.
+
+If we build systems with the right intention, AI and automation could remove humans from the most stressful, dangerous, and high-risk tasks, while still protecting what matters most.
+
+In a small way, Aquarius follows the same philosophy.
+
+Financial markets, especially in DeFi, are chaotic systems. Liquidations, cascading risks, and unpredictable volatility can harm users quickly. My goal with Aquarius is to create systems that observe that chaos, understand it, and protect people from its consequences.
+
+Not because technology is powerful —
+but because technology should be used to protect life and reduce suffering.
+
+The world could be far more beautiful if we used our tools to help one another instead of harming one another.
+
+Wars are not a sign of strength.
+
+True strength is found in love ❤️, sacrifice, and the willingness to protect others. 🙏
+
+
+
+
+
+## Gratitude & Acknowledgments
+
+A project of this scale isn't built in a vacuum. I am deeply grateful to the individuals and organizations that made Aquarius possible:
+
+* Family: A special thanks to my Mom for the unwavering emotional and financial support throughout the intensity of this hackathon— even without fully understanding what I was building.
+  
+* Mentorship: A massive thank you to sir @azizali ([Aziz Ali](https://github.com/azizali)). Your guidance at iLoveCoding unlocked my understanding of programming and set the foundation for everything I build today.
+
+* Education: Deep gratitude to sir @PatrickAlphaC ([Patrick Collins](https://github.com/PatrickAlphaC)) for onboarding me into the world of blockchain and DeFi fundamentals—your teachings were the bedrock of this project.
+
+* The @smartcontractkit (Chainlink) Foundation: Thank you for providing the platform and opportunity for developers to express ourselves and build the future of Web3. 
+
+A special thanks as well to the Alchemy community calls @alchemyplatform ([Alchemy](https://github.com/alchemyplatform)). The T-shirt and stickers were a real motivational boost. Receiving a gift shipped from another country made me, for the first time, feel that I was truly part of something important.
+
+
+* DevRel Teams: Thank you to **sir Harry *@.pappas99*, sir Bharath *@bharath7777,***  for the tireless support and for guiding me through the hackathon logistics. Also thanks to **sir Fillip *@filip.petroviccc*** for the free tenderly credit for deployment
+
+* Community & Creators: Thanks to the creators of the tools utilized in this build and the YouTube educators --  @codeeaterweb3971 ([Code Eater Web3 ](https://www.youtube.com/@codeeaterweb3971)) , @Codevolution ([Codevolution](https://www.youtube.com/@Codevolution)) , @DaveGrayTeachesCode ([ Dave Gray ](https://www.youtube.com/@DaveGrayTeachesCode))  whose tutorials guided my technical decisions—you were key to completing this project.
+
+> This project is a living proof that the little good will put into the world has a way of changing the world in a large way beyond our possible imagination.
+>
+> Somewhere, someday, a curious kid might read this—and start building too.
+
+## Dedication
+
+<p align="center">
+  <a href="https://en.wikipedia.org/wiki/Miki_Endo">
+    <img src="https://github.com/user-attachments/assets/1cbf2ce6-2796-4798-85e5-63ba72d2f27f" alt="Miki Endo" width="200" />
+  </a>
+  <br />
+  <a href="https://en.wikipedia.org/wiki/Miki_Endo">
+    <img src="https://img.shields.io/badge/In_Memory_Of-Miki_Endo-red?style=for-the-badge&logo=heart&logoColor=white" alt="Miki Endo" />
+  </a>
+</p>
+
+<p align="center">
+  This project is dedicated to <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b> — the voice that never stopped broadcasting.
+</p>
+
+> Her courage embodies the spirit behind **Aquarius**.
+>
+> She reminds us that even a single voice, standing in the face of overwhelming danger, can protect countless lives.
+>
+> May the systems we build carry that same spirit — where technology continues protecting people even when humans cannot, and ensuring we build to protect, not to harm.
+
+---
+
+
+# Fun Fact 😀
+
+The names used for this project were not chosen at random; they mean something to us and our emerging community.
+
+## Meaning of Names We Chose for This Project and Why
+
+- **Aquarius** – represents the sea of ever-flowing data, non-stop, just like water.  
+
+- **Aqua Agent** – derived from Aquarius; these agents constantly monitor streams of data to protect user positions.  
+
+- **Selva** – a Finnish word meaning clarity. Our SDK provides clarity to other systems, enabling informed decisions at lightning speed.  
+
+- **Endo** – our chat agent, named in honor of Miki Endo. She was newly married yet chose duty during the tsunami, giving her life so others may live.  
+
+  Fun Fact: For us, Endo also means:  
+  - E – Effort  
+  - N – Never  
+  - D – Dies  
+  - O – Off  
+
+The spirit of Miki Endo lives on ❤️
