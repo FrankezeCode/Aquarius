@@ -7,6 +7,16 @@ Autonomous, protocol-aware real-time risk intelligence and mitigation infrastruc
   </a>
 </p>
 
+<p align="center">
+  <a href="https://aquarius-web.vercel.app/">
+    <img src="https://img.shields.io/badge/Live_Demo-View_Project-7c3aed?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://aquarius-web.vercel.app/docs/introduction">
+    <img src="https://img.shields.io/badge/Documentation-Read_Whitepaper-3b82f6?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentation" />
+  </a>
+</p>
+
 ## Table of Contents
 
 - [Overview](#overview)
