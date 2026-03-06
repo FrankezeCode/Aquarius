@@ -1,10 +1,11 @@
-import type { MDXComponents } from "mdx/types";
-import { isValidElement, type ReactNode } from "react";
+import { isValidElement, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Callout } from "./callout";
 import { ApiEndpoint } from "./api-endpoint";
 import { MermaidDiagram } from "./mermaid-diagram";
+
+type MDXComponents = Record<string, ComponentType<any>>;
 
 function extractText(node: ReactNode): string {
   if (typeof node === "string") return node;
