@@ -1,5 +1,5 @@
 # Aquarius Risk Intelligence Protocol (AQUARIUS)
-Autonomous, protocol-aware real-time risk intelligence and mitigation infrastructure for DeFi - built on a Chainlink-oriented orchestration stack.
+**Autonomous, protocol-aware real-time risk intelligence and mitigation infrastructure for DeFi - built on a Chainlink-oriented orchestration stack.**
 
 <p align="center">
   <a href="https://aquarius-web.vercel.app/">
