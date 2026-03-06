@@ -15,6 +15,7 @@
     "run:agent": "tsx scripts/run-agent.ts",
     "run:cre": "tsx scripts/run-cre-simulation.ts",
     "run:ccc-demo": "tsx scripts/run-ccc-demo.ts",
+    "run:confidential-validation": "tsx scripts/run-confidential-http-validation.ts",
     "run:full-validation": "tsx scripts/run-full-validation.ts",
     "compile:contracts": "tsx scripts/compile-contracts.ts"
   },

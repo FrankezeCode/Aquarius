@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "startedAt": "2026-03-06T19:01:51.433Z",
+  "finishedAt": "2026-03-06T19:02:04.249Z",
+  "dispatchReceived": true,
+  "dispatchAuthorized": true,
+  "workflowId": "aave-risk-confidential-http",
+  "notes": [
+    "Escalation action dispatched through live action-layer path.",
+    "Confidential HTTP dispatch accepted by private endpoint.",
+    "Webhook callback processed by internal CRE ingest route.",
+    "Ingestion mode confirmed as confidential-http."
+  ],
+  "correlationId": "4c9e607b-2a54-435c-a9ee-446a5c93ab8b",
+  "callbackStatusCode": 200,
+  "callbackBody": {
+    "status": "processed",
+    "workflowId": "aave-risk-confidential-http",
+    "chainId": "ethereum",
+    "globalRiskIndex": 40,
+    "liquidationPressure": 0,
+    "timestamp": "2026-03-06T19:02:04.183Z",
+    "ingestionMode": "confidential-http",
+    "correlationId": "4c9e607b-2a54-435c-a9ee-446a5c93ab8b"
+  }
+}

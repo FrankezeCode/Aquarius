@@ -32,7 +32,11 @@ export interface CREWebhookPayload {
 }
 
 /** Workflow IDs that trigger the Aave risk-intelligence pipeline. */
-const AAVE_RISK_WORKFLOWS = new Set(["aave-risk", "aave-risk-monitor"]);
+const AAVE_RISK_WORKFLOWS = new Set([
+  "aave-risk",
+  "aave-risk-monitor",
+  "aave-risk-confidential-http",
+]);
 
 export async function registerCREWebhookRoute(
   app: FastifyInstance,
@@ -69,6 +73,11 @@ export async function registerCREWebhookRoute(
         // Cache the normalized snapshot (O(1), synchronous).
         queryService.updateSnapshot(snapshot);
 
+        const data = payload.data as Record<string, unknown> | undefined;
+        const correlationId =
+          data && typeof data.correlationId === "string" ? data.correlationId : undefined;
+        const isConfidential = data?.confidential === true;
+
         return reply.status(200).send({
           status: "processed",
           workflowId: payload.workflowId,
@@ -76,6 +85,8 @@ export async function registerCREWebhookRoute(
           globalRiskIndex: snapshot.globalRiskIndex,
           liquidationPressure: snapshot.liquidationPressure,
           timestamp: snapshot.timestamp,
+          ingestionMode: isConfidential ? "confidential-http" : "standard",
+          correlationId,
         });
       } catch (err) {
         request.log.error(err, "Aave risk monitor pipeline failed");

@@ -77,6 +77,27 @@ describe("CRE Webhook / aave-risk integration", () => {
     assert.equal(body.chainId, "arbitrum");
   });
 
+  it("processes confidential-http workflow with correlation metadata", async () => {
+    const app = await buildApp();
+    const correlationId = `corr-${Date.now()}`;
+    const res = await postWebhook(app, {
+      workflowId: "aave-risk-confidential-http",
+      timestamp: Date.now(),
+      chainId: "ethereum",
+      data: {
+        confidential: true,
+        source: "confidential-http",
+        correlationId,
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = res.json() as Record<string, unknown>;
+    assert.equal(body.status, "processed");
+    assert.equal(body.ingestionMode, "confidential-http");
+    assert.equal(body.correlationId, correlationId);
+  });
+
   it("returns 400 for missing required fields", async () => {
     const app = await buildApp();
 
