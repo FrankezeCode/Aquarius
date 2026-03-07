@@ -3,20 +3,40 @@
  *
  * Bounded context: Aave / Action Layer
  *
- * Stub adapter for triggering Chainlink Runtime Environment (CRE)
- * workflows from the action layer. Non-blocking via queueMicrotask.
+ * This adapter forwards risk-action intents from Aquarius into a
+ * Confidential HTTP workflow boundary. It is intentionally non-blocking:
+ * the caller returns immediately while dispatch happens asynchronously.
  *
  * DDD role: Infrastructure Adapter — translates action-layer commands
- * into CRE-specific calls.
+ * into transport-specific calls for confidential workflow execution.
  *
- * Design:
- *   - Returns void (fire-and-forget)
- *   - No await, no Promise return
- *   - Uses queueMicrotask to avoid blocking the caller
- *   - Console audit logging only
+ * What happens (step-by-step):
+ *   1) Escalation service calls triggerCRE(payload).
+ *   2) triggerCRE schedules a microtask and returns immediately.
+ *   3) dispatchConfidentialHttp reads runtime config from env:
+ *      CRE_CONFIDENTIAL_HTTP_URL, CRE_CONFIDENTIAL_HTTP_TOKEN,
+ *      CRE_CONFIDENTIAL_WORKFLOW_ID, CRE_CONFIDENTIAL_CALLBACK_URL.
+ *   4) Adapter generates a correlationId and marks the envelope as
+ *      confidential=true.
+ *   5) Adapter POSTs JSON to CRE_CONFIDENTIAL_HTTP_URL with:
+ *      - X-CRE-Correlation-Id header
+ *      - optional Bearer token
+ *      - timeout guard via AbortController.
+ *   6) Adapter logs one of:
+ *      - CONFIDENTIAL_HTTP_OK
+ *      - CONFIDENTIAL_HTTP_FAILED
+ *      - CONFIDENTIAL_HTTP_ERROR
  *
- * TODO: Future integration with real CRE pipelines via Chainlink
- *       Functions or direct DON trigger.
+ * What this adapter does NOT do:
+ *   - It does not execute onchain mitigation itself.
+ *   - It does not hold or request user private keys.
+ *   - It does not block API/risk request lifecycles.
+ *
+ * Current validation scope:
+ *   - End-to-end confidential dispatch/callback is validated in
+ *     local CRE DON simulation.
+ *   - Production DON deployment and gateway-trigger hardening are
+ *     future steps.
  */
 
 import type { ActionType } from "../agentic-risk/agent.guard.js";
@@ -160,14 +180,16 @@ async function dispatchConfidentialHttp(payload: CREActionPayload): Promise<void
 /**
  * Trigger a CRE workflow for the given action.
  *
- * Non-blocking — uses queueMicrotask so the caller (escalation service)
- * returns immediately. The CRE trigger runs outside the HTTP request
- * lifecycle.
+ * Fire-and-forget entry point.
  *
- * TODO: Replace console stub with real CRE pipeline invocation:
- *   - Encode payload for Chainlink Functions
- *   - Submit to DON via Functions router contract
- *   - Track execution via CRE job ID
+ * Non-blocking behavior:
+ *   - queueMicrotask schedules dispatch after current call stack.
+ *   - caller returns immediately (no await, no Promise contract).
+ *   - dispatch runs outside HTTP request lifecycle.
+ *
+ * Observability:
+ *   - logs deterministic trigger metadata
+ *   - downstream dispatch logs carry correlationId for traceability
  */
 export function triggerCRE(payload: CREActionPayload): void {
   queueMicrotask(() => {
