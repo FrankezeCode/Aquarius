@@ -43,6 +43,7 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
   - [Escalation Flow](#escalation-flow)
   - [Mitigation Execution Flow](#mitigation-execution-flow)
   - [Real-Time Risk Copilot Flow](#real-time-risk-copilot-flow)
+  - [Confidential HTTP Local Flow](#confidential-http-local-flow)
 - [Health Score, SELVA SDK, and Bot APIs](#health-score-selva-sdk-and-bot-apis)
 - [Deploying](#deploying)
 - [Commands](#commands)
