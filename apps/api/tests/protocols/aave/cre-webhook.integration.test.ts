@@ -98,6 +98,36 @@ describe("CRE Webhook / aave-risk integration", () => {
     assert.equal(body.correlationId, correlationId);
   });
 
+  it("rejects stale confidential callbacks in local_don_ccc mode", async () => {
+    const previousMode = process.env.EXECUTION_MODE;
+    const previousMaxAge = process.env.LOCAL_DON_CCC_CALLBACK_MAX_AGE_MS;
+
+    process.env.EXECUTION_MODE = "local_don_ccc";
+    process.env.LOCAL_DON_CCC_CALLBACK_MAX_AGE_MS = "1000";
+
+    try {
+      const app = await buildApp();
+      const res = await postWebhook(app, {
+        workflowId: "aave-risk-confidential-http",
+        timestamp: Date.now() - 10_000,
+        chainId: "ethereum",
+        data: {
+          confidential: true,
+          source: "confidential-http",
+          correlationId: `stale-${Date.now()}`,
+        },
+      });
+
+      assert.equal(res.statusCode, 409);
+      const body = res.json() as Record<string, unknown>;
+      assert.equal(body.error, "Stale confidential callback rejected");
+      assert.equal(body.executionMode, "local_don_ccc");
+    } finally {
+      process.env.EXECUTION_MODE = previousMode;
+      process.env.LOCAL_DON_CCC_CALLBACK_MAX_AGE_MS = previousMaxAge;
+    }
+  });
+
   it("returns 400 for missing required fields", async () => {
     const app = await buildApp();
 

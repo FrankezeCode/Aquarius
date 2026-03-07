@@ -11,6 +11,7 @@
  * Modes:
  *   - observe_only   → log and skip (no-op)
  *   - simulated_ccc  → CccExecutionAdapter (Tenderly fork)
+ *   - local_don_ccc  → Callback-driven local DON simulation handoff to CCC adapter
  *   - real_ccc       → Future Chainlink DON (not yet implemented)
  *
  * All decisions are logged for audit.
@@ -29,7 +30,11 @@ import type {
 import type { ActionTemplate } from "./mitigation-registry.js";
 import { resolveTemplates, classifyRiskType } from "./mitigation-registry.js";
 
-export type ExecutionRouterMode = "observe_only" | "simulated_ccc" | "real_ccc";
+export type ExecutionRouterMode =
+  | "observe_only"
+  | "simulated_ccc"
+  | "local_don_ccc"
+  | "real_ccc";
 
 export interface ExecutionDecision {
   mode: ExecutionRouterMode;
@@ -75,6 +80,7 @@ export class ExecutionRouter implements ExecutionPort {
         break;
 
       case "simulated_ccc":
+      case "local_don_ccc":
       case "real_ccc":
         await this.executeCCC(context, decision);
         break;
@@ -92,6 +98,12 @@ export class ExecutionRouter implements ExecutionPort {
    * Execute a mitigation through the CCC pipeline.
    * Resolves templates from the mitigation registry,
    * then dispatches to the CCC adapter.
+   *
+   * local_don_ccc note:
+   * - Router behavior is intentionally identical to simulated_ccc at this layer.
+   * - The "DON-like" behavior is enforced upstream in callback ingress
+   *   (correlation reserve/replay/timeout gates).
+   * - Keeping router logic shared prevents mode drift for mitigation semantics.
    */
   private async executeCCC(
     context: ExecutionContext,

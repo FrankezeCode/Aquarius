@@ -56,6 +56,7 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [Hosted split (recommended)](#hosted-split-recommended)
   - [Commands](#commands)
   - [Testing](#testing)
+    - [local_don_ccc End-to-End Semantics](#local_don_ccc-end-to-end-semantics)
   - [Validation Report (End-to-End Proof)](#validation-report-end-to-end-proof)
     - [Latest successful run summary](#latest-successful-run-summary)
     - [Stage highlights](#stage-highlights)
@@ -86,6 +87,7 @@ Aquarius is a protocol-aware control system for DeFi position protection (starti
 - staged escalation state machine
 - CRE-oriented orchestration
 - CCC-oriented dual-path execution
+- local DON callback-driven CCC execution mode (`local_don_ccc`)
 - CCIP-style cross-chain risk propagation
 - real-time Risk AI Copilot (position-aware)
 - bot-ready API and SELVA SDK interfaces
@@ -129,7 +131,7 @@ flowchart LR
     CRE --> ESC
 
     ESC --> EXE[Execution Router]
-    EXE --> CCC[CCC Adapter\nsimulated_ccc / real_ccc path]
+    EXE --> CCC[CCC Adapter\nsimulated_ccc / local_don_ccc / real_ccc path]
     EXE --> VAULT[Buffer Vault / Repay Path]
 
     ESC --> CCIP[CCIP Risk Broadcast + Synchronizer]
@@ -222,11 +224,17 @@ sequenceDiagram
 ### Chainlink Confidential Compute (CCC) Oriented Execution
 
 - CCC adapter: [`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts)
-- mode factory (`simulated_ccc` / `real_ccc`): [`apps/api/src/infrastructure/ccc/executionFactory.ts`](apps/api/src/infrastructure/ccc/executionFactory.ts)
+- mode factory (`simulated_ccc` / `local_don_ccc` / `real_ccc`): [`apps/api/src/infrastructure/ccc/executionFactory.ts`](apps/api/src/infrastructure/ccc/executionFactory.ts)
 - confidential boundary adapter: [`apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts`](apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts)
 - CRE demo route execution proof: [`apps/api/src/routes/cre/demo.ts`](apps/api/src/routes/cre/demo.ts)
 
-Current validated execution mode is `simulated_ccc` on Tenderly-backed infrastructure. `real_ccc` remains a planned production path.
+Execution modes now have clear responsibilities:
+
+- `simulated_ccc`: direct simulation-oriented adapter execution path.
+- `local_don_ccc`: callback-driven local DON semantics (`confidential-http` callback -> correlation guards -> execution router -> CCC adapter).
+- `real_ccc`: planned production DON-backed path.
+
+Current validated modes in this repo are `simulated_ccc` and `local_don_ccc` (local DON simulation). `real_ccc` remains a planned production path.
 
 ### Confidential HTTP (Local DON Simulation Validation)
 
@@ -284,7 +292,12 @@ Validated claim for this track submission:
 2. local simulated confidential endpoint accepts the request
 3. endpoint calls Aquarius internal webhook callback
 4. Aquarius ingests callback as `ingestionMode: confidential-http`
-5. artifacts are written for submission evidence
+5. in `local_don_ccc` mode, Aquarius:
+   - checks callback freshness (`LOCAL_DON_CCC_CALLBACK_MAX_AGE_MS`)
+   - reserves `correlationId` in replay ledger (`LOCAL_DON_CCC_REPLAY_TTL_MS`)
+   - builds deterministic execution context
+   - routes to CCC execution with timeout guard (`LOCAL_DON_CCC_EXECUTION_TIMEOUT_MS`)
+6. artifacts are written for submission evidence
 
 ```mermaid
 sequenceDiagram
@@ -391,6 +404,7 @@ pnpm dev --filter web
 | `pnpm run:cre` | Run CRE simulation |
 | `pnpm run:ccc-demo` | Run CCC demo simulation |
 | `pnpm run:local-cre-don-sim` | Run local CRE DON confidential simulation proof |
+| `node --import tsx --test apps/api/tests/protocols/aave/local-don-ccc.execution.integration.test.ts` | Run local_don_ccc callback->execution integration proof |
 | `pnpm run:full-validation` | Run full architecture validation |
 
 ## Testing
@@ -400,6 +414,43 @@ pnpm dev --filter web
 - full validation runner: [`scripts/run-full-validation.ts`](scripts/run-full-validation.ts)
 - local confidential simulation proof runner: [`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts)
 - local confidential payload fixture: [`workflows/aave-risk/payload.local-simulation.json`](workflows/aave-risk/payload.local-simulation.json)
+- local DON callback->router->CCC execution test: [`apps/api/tests/protocols/aave/local-don-ccc.execution.integration.test.ts`](apps/api/tests/protocols/aave/local-don-ccc.execution.integration.test.ts)
+
+### local_don_ccc End-to-End Semantics
+
+`local_don_ccc` is designed to prove a true local DON-like execution lifecycle without claiming production DON guarantees.
+
+What it guarantees in code:
+
+1. **Confidential callback gate**  
+   `workflowId = aave-risk-confidential-http` callback enters internal webhook ingest path.
+
+2. **Correlation-based idempotency and replay protection**  
+   The callback correlation ID is reserved in an in-memory ledger with deterministic states:
+   - `processing`
+   - `completed`
+   - `failed`
+   - `timed_out`
+
+3. **Stale callback rejection**  
+   Late callbacks are rejected using `LOCAL_DON_CCC_CALLBACK_MAX_AGE_MS`.
+
+4. **Deterministic execution handoff**  
+   Callback data is normalized into `ExecutionContext` and handed to `ExecutionRouter("local_don_ccc")`.
+
+5. **Bounded execution latency**  
+   Router handoff is wrapped with timeout via `LOCAL_DON_CCC_EXECUTION_TIMEOUT_MS`.
+
+6. **Machine-readable outcome**  
+   Webhook response includes `localDonExecution.status`:
+   - `executed`
+   - `duplicate-ignored`
+   - `replay-rejected`
+
+Primary implementation:
+- [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts)
+- [`apps/api/src/infrastructure/execution/execution-router.ts`](apps/api/src/infrastructure/execution/execution-router.ts)
+- [`apps/api/src/infrastructure/ccc/executionFactory.ts`](apps/api/src/infrastructure/ccc/executionFactory.ts)
 
 ## Validation Report (End-to-End Proof)
 
@@ -503,6 +554,8 @@ CCC and confidential execution:
   https://github.com/FrankezeCode/Aquarius/blob/main/apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts
 - CCC mode factory:  
   https://github.com/FrankezeCode/Aquarius/blob/main/apps/api/src/infrastructure/ccc/executionFactory.ts
+- local DON callback execution ingress:  
+  https://github.com/FrankezeCode/Aquarius/blob/main/apps/api/src/routes/internal/ingest/cre-webhook.ts
 - Confidential boundary adapter:  
   https://github.com/FrankezeCode/Aquarius/blob/main/apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts
 
@@ -516,6 +569,7 @@ CCIP propagation:
 ## Known Issues and Limitations
 - This submission validates confidential behavior via local CRE DON simulation, not production DON deployment.
 - Full production DON Confidential HTTP gateway-trigger evidence (JWT + deployed workflow endpoint) is reserved for post-hackathon hardening.
+- local_don_ccc replay/idempotency ledger is in-memory (process-local), not yet backed by persistent shared storage.
 - Some user flows are intentionally simulation-first for hackathon validation velocity.
 - Production hardening (persistent infra/state and operational controls) is an actve next step.
 

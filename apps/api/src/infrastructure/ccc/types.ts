@@ -8,7 +8,7 @@
  * domain/events/MitigationIntent.ts.
  */
 
-export type ExecutionMode = "simulated_ccc" | "real_ccc";
+export type ExecutionMode = "simulated_ccc" | "local_don_ccc" | "real_ccc";
 
 export interface CccExecutionConfig {
   mode: ExecutionMode;

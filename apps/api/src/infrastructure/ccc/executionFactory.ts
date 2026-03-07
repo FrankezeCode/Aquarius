@@ -6,7 +6,14 @@
  *
  * Supported modes:
  *   - "simulated_ccc" → CccExecutionAdapter (Tenderly fork)
+ *   - "local_don_ccc" → CccExecutionAdapter (callback-driven local DON simulation path)
  *   - "real_ccc"       → Future Chainlink DON integration
+ *
+ * Note:
+ * local_don_ccc currently reuses the same adapter implementation as simulated_ccc.
+ * The semantic difference lives in the ingress path:
+ *   confidential callback -> correlation guards -> ExecutionRouter handoff.
+ * This factory only ensures the adapter dependency exists for both modes.
  */
 
 import { CccExecutionAdapter } from "./CccExecutionAdapter.js";
@@ -19,13 +26,13 @@ export function createCccAdapter(): CccExecutionAdapter {
   if (mode === "real_ccc") {
     throw new Error(
       "[ccc-factory] real_ccc mode is not yet implemented. " +
-      "Use EXECUTION_MODE=simulated_ccc with a Tenderly fork."
+      "Use EXECUTION_MODE=simulated_ccc or EXECUTION_MODE=local_don_ccc with a Tenderly fork."
     );
   }
 
   if (!rpcUrl) {
     throw new Error(
-      "[ccc-factory] TENDERLY_RPC_URL is required for simulated_ccc mode."
+      `[ccc-factory] TENDERLY_RPC_URL is required for ${mode} mode.`
     );
   }
 
