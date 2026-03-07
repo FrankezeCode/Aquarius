@@ -289,6 +289,28 @@ sequenceDiagram
     ActionLayer->>Artifact: write local simulation proof JSON
 ```
 
+### How Confidential HTTP Supports Aquarius Non-Custodial Promise
+
+This section explains exactly how Confidential HTTP supports Aquarius' core promise:
+"mitigate risk without custody of user private keys or critical credentials."
+
+1. **Keeps API secrets/credentials out of normal node memory (enclave path).**
+   - Aquarius dispatches confidential workflow payloads through the confidential boundary (`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`), including correlation and confidentiality markers.
+   - In this submission, the behavior is validated through local CRE DON simulation artifacts (`artifacts/confidential-http-validation.json`, `artifacts/local-cre-don-simulation-proof.json`).
+   - Production enclave guarantees require deployed Confidential HTTP workflow evidence and are listed as a future hardening step.
+
+2. **Lets you process sensitive offchain inputs privately.**
+   - Aquarius sends confidential action metadata (including correlation IDs and confidential markers) and ingests callback results via the internal webhook path (`apps/api/src/routes/internal/ingest/cre-webhook.ts`).
+   - The validated local flow confirms end-to-end confidential dispatch, callback processing, and `ingestionMode: "confidential-http"` mapping.
+
+3. **Reduces exposure of critical credentials in orchestration flows.**
+   - Credentials for confidential dispatch are handled via environment-based configuration (`CRE_CONFIDENTIAL_HTTP_TOKEN`, `CRE_CONFIDENTIAL_HTTP_URL`) and are not hardcoded in workflow dispatch logic.
+   - Correlation-first logging gives traceability without requiring sensitive payload material to be printed in the main risk execution path.
+
+4. **Supports "we don't need your private key to run Aquarius intelligence/orchestration."**
+   - Aquarius risk intelligence and orchestration run without requiring users to provide private keys to the backend.
+   - Confidential HTTP strengthens this promise on the offchain side by supporting private orchestration of sensitive request/response handling, while non-custodial mitigation settlement remains policy-guarded and execution-mode controlled.
+
 ## Health Score, SELVA SDK, and Bot APIs
 
 Aquarius productizes risk intelligence for external builders and bots:
