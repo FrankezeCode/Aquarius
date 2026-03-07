@@ -22,43 +22,55 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Aquarius](#aquarius)
-- [What Problem Aquarius Solves](#what-problem-aquarius-solves)
-- [How It Works](#how-it-works)
-- [Architecture Diagram](#architecture-diagram)
-- [Contracts and Architecture](#contracts-and-architecture)
-  - [Core Contracts](#core-contracts)
-  - [API and Orchestration Layer](#api-and-orchestration-layer)
-  - [Intelligence Layer](#intelligence-layer)
-  - [Execution Layer](#execution-layer)
-  - [SDK and Bot Surface](#sdk-and-bot-surface)
-- [System Actors](#system-actors)
-- [Chainlink Integrations](#chainlink-integrations)
-  - [Chainlink CRE](#chainlink-cre)
-  - [Chainlink Confidential Compute (CCC) Oriented Execution](#chainlink-confidential-compute-ccc-oriented-execution)
-  - [Chainlink CCIP (Cross-Chain Risk Propagation)](#chainlink-ccip-cross-chain-risk-propagation)
-- [Workflow Flows](#workflow-flows)
-  - [Risk Monitoring Flow](#risk-monitoring-flow)
-  - [Escalation Flow](#escalation-flow)
-  - [Mitigation Execution Flow](#mitigation-execution-flow)
-  - [Real-Time Risk Copilot Flow](#real-time-risk-copilot-flow)
-  - [Confidential HTTP Local Flow](#confidential-http-local-flow)
-- [Health Score, SELVA SDK, and Bot APIs](#health-score-selva-sdk-and-bot-apis)
-- [Deploying](#deploying)
-- [Commands](#commands)
-- [Testing](#testing)
-- [Validation Report (End-to-End Proof)](#validation-report-end-to-end-proof)
-- [Confidential HTTP Local Simulation Proof](#confidential-http-local-simulation-proof)
-- [Chainlink Usage (Direct Code Links)](#chainlink-usage-direct-code-links)
-- [Known Issues and Limitations](#known-issues-and-limitations)
-- [Future Developments](#future-developments)
-- [Challenges We Ran Into](#challenges-we-ran-into)
-- [Frontend](#frontend)
-- [Builder’s Note](#builders-note)
-- [Gratitude & Acknowledgments](#gratitude--acknowledgments)
-- [Dedication](#dedication)
-- [😀 Fun Fact](#fun-fact-)
+- [Aquarius Risk Intelligence Protocol (AQUARIUS)](#aquarius-risk-intelligence-protocol-aquarius)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Aquarius](#aquarius)
+  - [What Problem Aquarius Solves](#what-problem-aquarius-solves)
+    - [DeFi user problem](#defi-user-problem)
+    - [Chainlink ecosystem problem](#chainlink-ecosystem-problem)
+  - [How It Works](#how-it-works)
+  - [Architecture Diagram](#architecture-diagram)
+  - [Contracts and Architecture](#contracts-and-architecture)
+    - [Core Contracts](#core-contracts)
+    - [API and Orchestration Layer](#api-and-orchestration-layer)
+    - [Intelligence Layer](#intelligence-layer)
+    - [Execution Layer](#execution-layer)
+    - [SDK and Bot Surface](#sdk-and-bot-surface)
+  - [System Actors](#system-actors)
+  - [Chainlink Integrations](#chainlink-integrations)
+    - [Chainlink CRE](#chainlink-cre)
+    - [Chainlink Confidential Compute (CCC) Oriented Execution](#chainlink-confidential-compute-ccc-oriented-execution)
+    - [Confidential HTTP (Local DON Simulation Validation)](#confidential-http-local-don-simulation-validation)
+    - [Chainlink CCIP (Cross-Chain Risk Propagation)](#chainlink-ccip-cross-chain-risk-propagation)
+  - [Workflow Flows](#workflow-flows)
+    - [Risk Monitoring Flow](#risk-monitoring-flow)
+    - [Escalation Flow](#escalation-flow)
+    - [Mitigation Execution Flow](#mitigation-execution-flow)
+    - [Real-Time Risk Copilot Flow](#real-time-risk-copilot-flow)
+    - [Confidential HTTP Local Flow](#confidential-http-local-flow)
+    - [How Confidential HTTP Supports Aquarius Non-Custodial Promise](#how-confidential-http-supports-aquarius-non-custodial-promise)
+  - [Health Score, SELVA SDK, and Bot APIs](#health-score-selva-sdk-and-bot-apis)
+  - [Deploying](#deploying)
+    - [Local](#local)
+    - [Hosted split (recommended)](#hosted-split-recommended)
+  - [Commands](#commands)
+  - [Testing](#testing)
+  - [Validation Report (End-to-End Proof)](#validation-report-end-to-end-proof)
+    - [Latest successful run summary](#latest-successful-run-summary)
+    - [Stage highlights](#stage-highlights)
+    - [Tenderly explorer links (from latest run)](#tenderly-explorer-links-from-latest-run)
+  - [Confidential HTTP Local Simulation Proof](#confidential-http-local-simulation-proof)
+  - [Chainlink Usage (Direct Code Links)](#chainlink-usage-direct-code-links)
+  - [Known Issues and Limitations](#known-issues-and-limitations)
+  - [Future Developments](#future-developments)
+  - [Challenges We Ran Into](#challenges-we-ran-into)
+  - [Frontend](#frontend)
+  - [Builder’s Note](#builders-note)
+  - [Gratitude \& Acknowledgments](#gratitude--acknowledgments)
+  - [Dedication](#dedication)
+- [Fun Fact 😀](#fun-fact-)
+  - [Meaning of Names We Chose for This Project and Why](#meaning-of-names-we-chose-for-this-project-and-why)
 
 ## Overview
 
@@ -308,9 +320,28 @@ This section explains exactly how Confidential HTTP supports Aquarius' core prom
    - Credentials for confidential dispatch are handled via environment-based configuration (`CRE_CONFIDENTIAL_HTTP_TOKEN`, `CRE_CONFIDENTIAL_HTTP_URL`) and are not hardcoded in workflow dispatch logic.
    - Correlation-first logging gives traceability without requiring sensitive payload material to be printed in the main risk execution path.
 
-4. **Supports "we don't need your private key to run Aquarius intelligence/orchestration."**
+4. **Generally Strengthens our Promise to users and institutions -- "we don't need your private key and credentials to run Aquarius intelligence/orchestration for you"**
    - Aquarius risk intelligence and orchestration run without requiring users to provide private keys to the backend.
    - Confidential HTTP strengthens this promise on the offchain side by supporting private orchestration of sensitive request/response handling, while non-custodial mitigation settlement remains policy-guarded and execution-mode controlled.
+  
+ *NOTE:* This is still under research. We hope to use other technologies to complement Confidential HTTP.
+
+While Confidential HTTP secures the transport and fetching of data, the following technologies can help ensure that orchestration (decision-making) and execution (movement of funds) are equally private and non-custodial.
+
+- **Multi-Party Computation (MPC):**  
+  With MPC, we can generate a valid signature to move funds without ever holding the full key. Even if the backend is breached, an attacker only gets a useless key fragment.
+
+- **Zero-Knowledge Proofs (ZKP) for Risk Logic:**  
+  An institution may not want to share its exact portfolio balance or internal risk thresholds. With ZKPs (for example, zk-SNARKs), a user can prove they meet a required risk profile locally, and Aquarius can verify that proof to trigger orchestration.  
+  This protects not only keys, but also strategy.
+
+- **Account Abstraction (ERC-4337):**  
+  This can help us enforce programmable non-custodial policies and safer user-controlled automation.
+
+- **Fully Homomorphic Encryption (FHE):**  
+  This may be important when we implement a unified security portfolio across multiple DeFi positions. Aquarius could run parts of its risk intelligence on encrypted portfolio data.
+
+Our goal is to ensure maximum security, protection, and privacy for users and institutions.
 
 ## Health Score, SELVA SDK, and Bot APIs
 
