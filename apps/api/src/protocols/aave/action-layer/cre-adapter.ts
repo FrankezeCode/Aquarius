@@ -27,6 +27,15 @@
  *      - CONFIDENTIAL_HTTP_FAILED
  *      - CONFIDENTIAL_HTTP_ERROR
  *
+ * What this adapter DOES do:
+ *   - Receives authorized risk-action payloads from the escalation layer.
+ *   - Builds a confidential dispatch envelope with correlationId and
+ *     confidential=true markers.
+ *   - Sends the payload to CRE_CONFIDENTIAL_HTTP_URL with optional
+ *     Bearer auth and request timeout protection.
+ *   - Emits structured audit logs for trigger/success/failure/error paths.
+ *   - Runs dispatch asynchronously so API and risk lifecycles remain fast.
+ *
  * What this adapter does NOT do:
  *   - It does not execute onchain mitigation itself.
  *   - It does not hold or request user private keys.
