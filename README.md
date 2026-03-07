@@ -464,12 +464,6 @@ CCIP propagation:
 - Full production DON Confidential HTTP gateway-trigger evidence (JWT + deployed workflow endpoint) is reserved for post-hackathon hardening.
 - Some user flows are intentionally simulation-first for hackathon validation velocity.
 - Production hardening (persistent infra/state and operational controls) is an actve next step.
-- I faced network/DNS issues that prevented direct CRE CLI installation. To work around this, I manually downloaded the CRE CLI ZIP from GitHub, installed it locally, and ran a full local CRE + DON simulation.
-This allowed end-to-end testing of Confidential HTTP, including callbacks, correlation IDs, and proof artifacts:
-artifacts/local-cre-don-simulation-proof.json
-artifacts/confidential-http-validation.json
-**Claim:** “End-to-end Confidential HTTP validated in local CRE DON simulation.”
-
 
 ## Future Developments
 
@@ -485,6 +479,12 @@ artifacts/confidential-http-validation.json
 - preventing behavior drift across provider modes (mock, Tenderly, onchain)
 - proving measurable mitigation outcomes, not just risk detection
 - validating end-to-end architecture reproducibly under hackathon time constraints
+- I faced network/DNS issues that prevented direct CRE CLI installation. To work around this, I manually downloaded the CRE CLI ZIP from GitHub, installed it locally, and ran a full local CRE + DON simulation.
+This allowed end-to-end testing of Confidential HTTP, including callbacks, correlation IDs, and proof artifacts:
+artifacts/local-cre-don-simulation-proof.json
+artifacts/confidential-http-validation.json
+**Claim:** “End-to-end Confidential HTTP validated in local CRE DON simulation.”
+
 
 How we addressed this:
 
@@ -492,6 +492,7 @@ How we addressed this:
 - strict schema validation, timeout, and fallback controls for AI layers
 - mode-based provider + execution abstractions
 - full-system validation runner with assertion and explorer-link evidence
+- manual  download of  the CRE CLI ZIP from GitHub
 
 ## Frontend
 
