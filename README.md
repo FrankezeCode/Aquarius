@@ -167,42 +167,42 @@ sequenceDiagram
 
 ### Core Contracts
 
-- `contracts/src/AquaAgentPolicyGuard.sol`
-- `contracts/src/MitigationExecutor.sol`
-- `contracts/src/BufferVault.sol`
-- `contracts/src/AquaAgent.sol`
-- `contracts/src/CCIPCoordinator.sol`
+- [`contracts/src/AquaAgentPolicyGuard.sol`](contracts/src/AquaAgentPolicyGuard.sol)
+- [`contracts/src/MitigationExecutor.sol`](contracts/src/MitigationExecutor.sol)
+- [`contracts/src/BufferVault.sol`](contracts/src/BufferVault.sol)
+- [`contracts/src/AquaAgent.sol`](contracts/src/AquaAgent.sol)
+- [`contracts/src/CCIPCoordinator.sol`](contracts/src/CCIPCoordinator.sol)
 
 ### API and Orchestration Layer
 
-- `apps/api/src/app.ts`
-- `apps/api/src/server.ts`
-- `apps/api/src/routes/v1/index.ts`
-- `apps/api/src/routes/cre/index.ts`
-- `apps/api/src/routes/cre/demo.ts`
-- `packages/domain/cre/run-cre-workflow.ts`
+- [`apps/api/src/app.ts`](apps/api/src/app.ts)
+- [`apps/api/src/server.ts`](apps/api/src/server.ts)
+- [`apps/api/src/routes/v1/index.ts`](apps/api/src/routes/v1/index.ts)
+- [`apps/api/src/routes/cre/index.ts`](apps/api/src/routes/cre/index.ts)
+- [`apps/api/src/routes/cre/demo.ts`](apps/api/src/routes/cre/demo.ts)
+- [`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts)
 
 ### Intelligence Layer
 
-- `apps/api/src/protocols/aave/risk-intelligence/monitor.ts`
-- `apps/api/src/protocols/aave/risk-intelligence/signals.ts`
-- `apps/api/src/protocols/aave/risk-intelligence/scorer.ts`
-- `apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts`
-- `apps/api/src/services/health-engine/index.ts`
+- [`apps/api/src/protocols/aave/risk-intelligence/monitor.ts`](apps/api/src/protocols/aave/risk-intelligence/monitor.ts)
+- [`apps/api/src/protocols/aave/risk-intelligence/signals.ts`](apps/api/src/protocols/aave/risk-intelligence/signals.ts)
+- [`apps/api/src/protocols/aave/risk-intelligence/scorer.ts`](apps/api/src/protocols/aave/risk-intelligence/scorer.ts)
+- [`apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts)
+- [`apps/api/src/services/health-engine/index.ts`](apps/api/src/services/health-engine/index.ts)
 
 ### Execution Layer
 
-- `apps/api/src/infrastructure/execution/execution-router.ts`
-- `apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`
-- `apps/api/src/infrastructure/ccc/executionFactory.ts`
-- `apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts`
+- [`apps/api/src/infrastructure/execution/execution-router.ts`](apps/api/src/infrastructure/execution/execution-router.ts)
+- [`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts)
+- [`apps/api/src/infrastructure/ccc/executionFactory.ts`](apps/api/src/infrastructure/ccc/executionFactory.ts)
+- [`apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts`](apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts)
 
 ### SDK and Bot Surface
 
-- `packages/sdk/src/aave-selva/index.ts`
-- `packages/sdk/src/aave-selva/health-score.ts`
-- `packages/sdk/src/index.ts`
-- `apps/api/src/routes/v1/aave-risk/index.ts`
+- [`packages/sdk/src/aave-selva/index.ts`](packages/sdk/src/aave-selva/index.ts)
+- [`packages/sdk/src/aave-selva/health-score.ts`](packages/sdk/src/aave-selva/health-score.ts)
+- [`packages/sdk/src/index.ts`](packages/sdk/src/index.ts)
+- [`apps/api/src/routes/v1/aave-risk/index.ts`](apps/api/src/routes/v1/aave-risk/index.ts)
 
 ## System Actors
 
@@ -214,39 +214,39 @@ sequenceDiagram
 
 ### Chainlink CRE
 
-- Shared orchestration core: `packages/domain/cre/run-cre-workflow.ts`
-- API route wrapper: `apps/api/src/routes/cre/index.ts`
-- Internal webhook ingestion: `apps/api/src/routes/internal/ingest/cre-webhook.ts`
-- CLI simulation: `scripts/run-cre-simulation.ts`
+- Shared orchestration core: [`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts)
+- API route wrapper: [`apps/api/src/routes/cre/index.ts`](apps/api/src/routes/cre/index.ts)
+- Internal webhook ingestion: [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts)
+- CLI simulation: [`scripts/run-cre-simulation.ts`](scripts/run-cre-simulation.ts)
 
 ### Chainlink Confidential Compute (CCC) Oriented Execution
 
-- CCC adapter: `apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`
-- mode factory (`simulated_ccc` / `real_ccc`): `apps/api/src/infrastructure/ccc/executionFactory.ts`
-- confidential boundary adapter: `apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts`
-- CRE demo route execution proof: `apps/api/src/routes/cre/demo.ts`
+- CCC adapter: [`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts)
+- mode factory (`simulated_ccc` / `real_ccc`): [`apps/api/src/infrastructure/ccc/executionFactory.ts`](apps/api/src/infrastructure/ccc/executionFactory.ts)
+- confidential boundary adapter: [`apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts`](apps/api/src/protocols/aave/infrastructure/execution/confidential-cre.adapter.ts)
+- CRE demo route execution proof: [`apps/api/src/routes/cre/demo.ts`](apps/api/src/routes/cre/demo.ts)
 
 Current validated execution mode is `simulated_ccc` on Tenderly-backed infrastructure. `real_ccc` remains a planned production path.
 
 ### Confidential HTTP (Local DON Simulation Validation)
 
-- Live dispatch boundary (action-layer): `apps/api/src/protocols/aave/action-layer/cre-adapter.ts`
-- Internal callback ingest + correlation mapping: `apps/api/src/routes/internal/ingest/cre-webhook.ts`
-- End-to-end local simulation runner: `scripts/run-confidential-http-validation.ts`
-- Local simulation artifact runbook: `docs/confidential-http-local-simulation.md`
-- Aquarius-compatible simulation payload: `workflows/aave-risk/payload.local-simulation.json`
+- Live dispatch boundary (action-layer): [`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts)
+- Internal callback ingest + correlation mapping: [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts)
+- End-to-end local simulation runner: [`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts)
+- Local simulation artifact runbook: [`docs/confidential-http-local-simulation.md`](docs/confidential-http-local-simulation.md)
+- Aquarius-compatible simulation payload: [`workflows/aave-risk/payload.local-simulation.json`](workflows/aave-risk/payload.local-simulation.json)
 
 Validated claim for this track submission:
 `End-to-end Confidential HTTP validated in local CRE DON simulation`.
 
 ### Chainlink CCIP (Cross-Chain Risk Propagation)
 
-- sender: `apps/api/src/protocols/aave/ccip/sender.ts`
-- receiver: `apps/api/src/protocols/aave/ccip/receiver.ts`
+- sender: [`apps/api/src/protocols/aave/ccip/sender.ts`](apps/api/src/protocols/aave/ccip/sender.ts)
+- receiver: [`apps/api/src/protocols/aave/ccip/receiver.ts`](apps/api/src/protocols/aave/ccip/receiver.ts)
 - broadcast and coordination services:
-  - `apps/api/src/protocols/aave/ccip/risk-broadcast.service.ts`
-  - `apps/api/src/protocols/aave/ccip/risk-state-synchronizer.ts`
-  - `apps/api/src/protocols/aave/ccip/global-escalation-coordinator.ts`
+  - [`apps/api/src/protocols/aave/ccip/risk-broadcast.service.ts`](apps/api/src/protocols/aave/ccip/risk-broadcast.service.ts)
+  - [`apps/api/src/protocols/aave/ccip/risk-state-synchronizer.ts`](apps/api/src/protocols/aave/ccip/risk-state-synchronizer.ts)
+  - [`apps/api/src/protocols/aave/ccip/global-escalation-coordinator.ts`](apps/api/src/protocols/aave/ccip/global-escalation-coordinator.ts)
 
 ## Workflow Flows
 
@@ -308,12 +308,12 @@ This section explains exactly how Confidential HTTP supports Aquarius' core prom
 "mitigate risk without custody of user private keys or critical credentials."
 
 1. **Keeps API secrets/credentials out of normal node memory (enclave path).**
-   - Aquarius dispatches confidential workflow payloads through the confidential boundary (`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`), including correlation and confidentiality markers.
-   - In this submission, the behavior is validated through local CRE DON simulation artifacts (`artifacts/confidential-http-validation.json`, `artifacts/local-cre-don-simulation-proof.json`).
+   - Aquarius dispatches confidential workflow payloads through the confidential boundary ([`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts)), including correlation and confidentiality markers.
+   - In this submission, the behavior is validated through local CRE DON simulation artifacts ([`artifacts/confidential-http-validation.json`](artifacts/confidential-http-validation.json), [`artifacts/local-cre-don-simulation-proof.json`](artifacts/local-cre-don-simulation-proof.json)).
    - Production enclave guarantees require deployed Confidential HTTP workflow evidence and are listed as a future hardening step.
 
 2. **Lets you process sensitive offchain inputs privately.**
-   - Aquarius sends confidential action metadata (including correlation IDs and confidential markers) and ingests callback results via the internal webhook path (`apps/api/src/routes/internal/ingest/cre-webhook.ts`).
+   - Aquarius sends confidential action metadata (including correlation IDs and confidential markers) and ingests callback results via the internal webhook path ([`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts)).
    - The validated local flow confirms end-to-end confidential dispatch, callback processing, and `ingestionMode: "confidential-http"` mapping.
 
 3. **Reduces exposure of critical credentials in orchestration flows.**
@@ -347,20 +347,20 @@ Our goal is to ensure maximum security, protection, and privacy for users and in
 
 Aquarius productizes risk intelligence for external builders and bots:
 
-- protocol health: `apps/api/src/routes/v1/aave-risk/protocol-health.ts`
-- user health: `apps/api/src/routes/v1/aave-risk/user-health.ts`
-- user risk projection: `apps/api/src/routes/v1/aave-risk/user-risk.ts`
-- projected HF: `apps/api/src/routes/v1/aave-risk/projected-hf.ts`
-- stress test: `apps/api/src/routes/v1/aave-risk/stress-test.ts`
-- actionable metrics: `apps/api/src/routes/v1/aave-risk/actionable-metrics.ts`
+- protocol health: [`apps/api/src/routes/v1/aave-risk/protocol-health.ts`](apps/api/src/routes/v1/aave-risk/protocol-health.ts)
+- user health: [`apps/api/src/routes/v1/aave-risk/user-health.ts`](apps/api/src/routes/v1/aave-risk/user-health.ts)
+- user risk projection: [`apps/api/src/routes/v1/aave-risk/user-risk.ts`](apps/api/src/routes/v1/aave-risk/user-risk.ts)
+- projected HF: [`apps/api/src/routes/v1/aave-risk/projected-hf.ts`](apps/api/src/routes/v1/aave-risk/projected-hf.ts)
+- stress test: [`apps/api/src/routes/v1/aave-risk/stress-test.ts`](apps/api/src/routes/v1/aave-risk/stress-test.ts)
+- actionable metrics: [`apps/api/src/routes/v1/aave-risk/actionable-metrics.ts`](apps/api/src/routes/v1/aave-risk/actionable-metrics.ts)
 
 SELVA SDK integrations:
 
-- `packages/sdk/src/aave-selva/health-score.ts`
-- `packages/sdk/src/aave-selva/risk.ts`
-- `packages/sdk/src/aave-selva/projected-hf.ts`
-- `packages/sdk/src/client.ts`
-- `packages/sdk/src/provider.ts`
+- [`packages/sdk/src/aave-selva/health-score.ts`](packages/sdk/src/aave-selva/health-score.ts)
+- [`packages/sdk/src/aave-selva/risk.ts`](packages/sdk/src/aave-selva/risk.ts)
+- [`packages/sdk/src/aave-selva/projected-hf.ts`](packages/sdk/src/aave-selva/projected-hf.ts)
+- [`packages/sdk/src/client.ts`](packages/sdk/src/client.ts)
+- [`packages/sdk/src/provider.ts`](packages/sdk/src/provider.ts)
 
 ## Deploying
 
@@ -375,8 +375,8 @@ pnpm dev --filter web
 
 ### Hosted split (recommended)
 
-- Frontend: Vercel (`apps/web`)
-- Backend: Render (`apps/api`)
+- Frontend: Vercel ([`apps/web`](apps/web))
+- Backend: Render ([`apps/api`](apps/api))
 - set `NEXT_PUBLIC_API_URL` on Vercel to your Render API URL
 
 ## Commands
@@ -395,11 +395,11 @@ pnpm dev --filter web
 
 ## Testing
 
-- protocol and architecture tests: `apps/api/tests/**`
-- CRE simulation runner: `scripts/run-cre-simulation.ts`
-- full validation runner: `scripts/run-full-validation.ts`
-- local confidential simulation proof runner: `scripts/run-confidential-http-validation.ts`
-- local confidential payload fixture: `workflows/aave-risk/payload.local-simulation.json`
+- protocol and architecture tests: [`apps/api/tests/`](apps/api/tests/)
+- CRE simulation runner: [`scripts/run-cre-simulation.ts`](scripts/run-cre-simulation.ts)
+- full validation runner: [`scripts/run-full-validation.ts`](scripts/run-full-validation.ts)
+- local confidential simulation proof runner: [`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts)
+- local confidential payload fixture: [`workflows/aave-risk/payload.local-simulation.json`](workflows/aave-risk/payload.local-simulation.json)
 
 ## Validation Report (End-to-End Proof)
 
@@ -463,8 +463,8 @@ pnpm run:local-cre-don-sim
 
 Generated artifacts:
 
-- `artifacts/confidential-http-validation.json`
-- `artifacts/local-cre-don-simulation-proof.json`
+- [`artifacts/confidential-http-validation.json`](artifacts/confidential-http-validation.json)
+- [`artifacts/local-cre-don-simulation-proof.json`](artifacts/local-cre-don-simulation-proof.json)
 
 Evidence fields in the generated proof include:
 
@@ -554,11 +554,11 @@ Frontend is built with Next.js + TypeScript and acts as an API consumer.
 
 Key implementation surfaces:
 
-- `apps/web/protocols/aave/aave-risk-monitor.tsx`
-- `apps/web/components/aave-risk-monitor/floating-risk-copilot.tsx`
-- `apps/web/components/aave-risk-monitor/risk-copilot-panel.tsx`
-- `apps/web/lib/use-risk-copilot.ts`
-- `apps/web/lib/use-health-score.ts`
+- [`apps/web/protocols/aave/aave-risk-monitor.tsx`](apps/web/protocols/aave/aave-risk-monitor.tsx)
+- [`apps/web/components/aave-risk-monitor/floating-risk-copilot.tsx`](apps/web/components/aave-risk-monitor/floating-risk-copilot.tsx)
+- [`apps/web/components/aave-risk-monitor/risk-copilot-panel.tsx`](apps/web/components/aave-risk-monitor/risk-copilot-panel.tsx)
+- [`apps/web/lib/use-risk-copilot.ts`](apps/web/lib/use-risk-copilot.ts)
+- [`apps/web/lib/use-health-score.ts`](apps/web/lib/use-health-score.ts)
   
 
 ## Builder’s Note
