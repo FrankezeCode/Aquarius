@@ -48,6 +48,7 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
 - [Commands](#commands)
 - [Testing](#testing)
 - [Validation Report (End-to-End Proof)](#validation-report-end-to-end-proof)
+- [Confidential HTTP Local Simulation Proof](#confidential-http-local-simulation-proof)
 - [Chainlink Usage (Direct Code Links)](#chainlink-usage-direct-code-links)
 - [Known Issues and Limitations](#known-issues-and-limitations)
 - [Future Developments](#future-developments)
@@ -214,6 +215,17 @@ sequenceDiagram
 
 Current validated execution mode is `simulated_ccc` on Tenderly-backed infrastructure. `real_ccc` remains a planned production path.
 
+### Confidential HTTP (Local DON Simulation Validation)
+
+- Live dispatch boundary (action-layer): `apps/api/src/protocols/aave/action-layer/cre-adapter.ts`
+- Internal callback ingest + correlation mapping: `apps/api/src/routes/internal/ingest/cre-webhook.ts`
+- End-to-end local simulation runner: `scripts/run-confidential-http-validation.ts`
+- Local simulation artifact runbook: `docs/confidential-http-local-simulation.md`
+- Aquarius-compatible simulation payload: `workflows/aave-risk/payload.local-simulation.json`
+
+Validated claim for this track submission:
+`End-to-end Confidential HTTP validated in local CRE DON simulation`.
+
 ### Chainlink CCIP (Cross-Chain Risk Propagation)
 
 - sender: `apps/api/src/protocols/aave/ccip/sender.ts`
@@ -252,6 +264,30 @@ Current validated execution mode is `simulated_ccc` on Tenderly-backed infrastru
 3. backend assembles deterministic context
 4. advisory layer adds Groq interpretation
 5. fallback-safe response returned if model unavailable
+
+### Confidential HTTP Local Flow
+
+1. AI escalation service dispatches a confidential CRE action payload (with correlation ID)
+2. local simulated confidential endpoint accepts the request
+3. endpoint calls Aquarius internal webhook callback
+4. Aquarius ingests callback as `ingestionMode: confidential-http`
+5. artifacts are written for submission evidence
+
+```mermaid
+sequenceDiagram
+    participant RiskAgent as RiskAgent
+    participant ActionLayer as ActionLayerCREAdapter
+    participant LocalConf as LocalConfidentialEndpoint
+    participant Webhook as AquariusWebhookIngest
+    participant Artifact as ProofArtifactWriter
+
+    RiskAgent->>ActionLayer: triggerCRE(payloadWithCorrelationId)
+    ActionLayer->>LocalConf: POST confidential dispatch
+    LocalConf->>Webhook: POST callback (confidential=true, correlationId)
+    Webhook-->>LocalConf: processed + ingestionMode
+    LocalConf-->>ActionLayer: requestId accepted
+    ActionLayer->>Artifact: write local simulation proof JSON
+```
 
 ## Health Score, SELVA SDK, and Bot APIs
 
@@ -300,6 +336,7 @@ pnpm dev --filter web
 | `pnpm test` | Run tests |
 | `pnpm run:cre` | Run CRE simulation |
 | `pnpm run:ccc-demo` | Run CCC demo simulation |
+| `pnpm run:local-cre-don-sim` | Run local CRE DON confidential simulation proof |
 | `pnpm run:full-validation` | Run full architecture validation |
 
 ## Testing
@@ -307,6 +344,8 @@ pnpm dev --filter web
 - protocol and architecture tests: `apps/api/tests/**`
 - CRE simulation runner: `scripts/run-cre-simulation.ts`
 - full validation runner: `scripts/run-full-validation.ts`
+- local confidential simulation proof runner: `scripts/run-confidential-http-validation.ts`
+- local confidential payload fixture: `workflows/aave-risk/payload.local-simulation.json`
 
 ## Validation Report (End-to-End Proof)
 
@@ -358,6 +397,31 @@ pnpm run run:full-validation
 - https://dashboard.tenderly.co/AQUARIUS/aqua-simulation/testnet/444ec6c6-eced-4b53-9852-ba6df3928682/tx/0xc3c1136304d64b90ab228ec1b8977aeff4785556bef72f5f8474c47bb6f0346b
 - https://dashboard.tenderly.co/AQUARIUS/aqua-simulation/testnet/444ec6c6-eced-4b53-9852-ba6df3928682/tx/0xdc6d73e9a86d9558ae38924576cbd84f8cc6a0efcf558f578b33a446f724ef28
 
+## Confidential HTTP Local Simulation Proof
+
+Aquarius includes a dedicated local DON simulation proof path for privacy-track validation without production deployment/JWT gateway triggering.
+
+Run:
+
+```bash
+pnpm run:local-cre-don-sim
+```
+
+Generated artifacts:
+
+- `artifacts/confidential-http-validation.json`
+- `artifacts/local-cre-don-simulation-proof.json`
+
+Evidence fields in the generated proof include:
+
+- `validationMode = "local_cre_don_simulation"`
+- `claim = "End-to-end Confidential HTTP validated in local CRE DON simulation"`
+- `dispatchReceived = true`
+- `dispatchAuthorized = true`
+- `callbackStatusCode = 200`
+- `callbackBody.ingestionMode = "confidential-http"`
+- matching `correlationId` between dispatch and callback
+
 ## Chainlink Usage (Direct Code Links)
 
 - CRE workflow orchestration core:  
@@ -372,6 +436,12 @@ pnpm run run:full-validation
   https://github.com/FrankezeCode/Aquarius/blob/main/scripts/run-cre-simulation.ts
 - Full architecture validation:  
   https://github.com/FrankezeCode/Aquarius/blob/main/scripts/run-full-validation.ts
+- Local confidential simulation validation:  
+  https://github.com/FrankezeCode/Aquarius/blob/main/scripts/run-confidential-http-validation.ts
+- Local confidential simulation runbook:  
+  https://github.com/FrankezeCode/Aquarius/blob/main/docs/confidential-http-local-simulation.md
+- Local confidential payload fixture:  
+  https://github.com/FrankezeCode/Aquarius/blob/main/workflows/aave-risk/payload.local-simulation.json
 
 CCC and confidential execution:
 
@@ -392,7 +462,8 @@ CCIP propagation:
 ## Known Issues and Limitations
 
 - `real_ccc` mode is a planned integration path; current validated path is `simulated_ccc`.
-- Full DON-backed encrypted confidential I/O proof artifacts are not yet exposed end-to-end.
+- This submission validates confidential behavior via local CRE DON simulation, not production DON deployment.
+- Full production DON Confidential HTTP gateway-trigger evidence (JWT + deployed workflow endpoint) is reserved for post-hackathon hardening.
 - Some user flows are intentionally simulation-first for hackathon validation velocity.
 - Production hardening (persistent infra/state and operational controls) is an active next step.
 

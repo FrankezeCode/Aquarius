@@ -1,0 +1,16 @@
+{
+  "workflowId": "aave-risk-confidential-http",
+  "chainId": "ethereum",
+  "timestamp": 1730000000000,
+  "data": {
+    "agentId": "validation-agent",
+    "actionType": "ESCALATE",
+    "composite": 0.93,
+    "correlationId": "corr-local-sim-001",
+    "confidential": true,
+    "metadata": {
+      "reason": "hackathon-local-don-simulation"
+    },
+    "callbackUrl": "http://127.0.0.1:3001/api/internal/ingest/cre-webhook"
+  }
+}

@@ -16,6 +16,7 @@
     "run:cre": "tsx scripts/run-cre-simulation.ts",
     "run:ccc-demo": "tsx scripts/run-ccc-demo.ts",
     "run:confidential-validation": "tsx scripts/run-confidential-http-validation.ts",
+    "run:local-cre-don-sim": "tsx scripts/run-confidential-http-validation.ts",
     "run:full-validation": "tsx scripts/run-full-validation.ts",
     "compile:contracts": "tsx scripts/compile-contracts.ts"
   },

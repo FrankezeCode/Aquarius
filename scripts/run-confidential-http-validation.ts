@@ -24,6 +24,8 @@ interface DispatchPayload {
 
 interface ValidationArtifact {
   success: boolean;
+  validationMode: "local_cre_don_simulation";
+  claim: string;
   startedAt: string;
   finishedAt: string;
   dispatchReceived: boolean;
@@ -51,6 +53,8 @@ async function waitFor(predicate: () => boolean, timeoutMs: number): Promise<voi
 async function main(): Promise<void> {
   const artifact: ValidationArtifact = {
     success: false,
+    validationMode: "local_cre_don_simulation",
+    claim: "End-to-end Confidential HTTP validated in local CRE DON simulation",
     startedAt: new Date().toISOString(),
     finishedAt: "",
     dispatchReceived: false,
@@ -175,6 +179,7 @@ async function main(): Promise<void> {
       throw new Error(`Escalation action was denied: ${escalation.reason}`);
     }
     artifact.notes.push("Escalation action dispatched through live action-layer path.");
+    artifact.notes.push("Validation mode uses local CRE DON simulation semantics (no deploy/JWT gateway trigger).");
 
     await waitFor(() => artifact.dispatchReceived, 5000);
     await waitFor(() => typeof callbackStatusCode === "number", 5000);
@@ -209,11 +214,17 @@ async function main(): Promise<void> {
     const artifactDir = resolve(process.cwd(), "artifacts");
     await mkdir(artifactDir, { recursive: true });
     const artifactPath = resolve(artifactDir, "confidential-http-validation.json");
+    const simulationArtifactPath = resolve(
+      artifactDir,
+      "local-cre-don-simulation-proof.json"
+    );
     await writeFile(artifactPath, JSON.stringify(artifact, null, 2), "utf8");
+    await writeFile(simulationArtifactPath, JSON.stringify(artifact, null, 2), "utf8");
 
     console.log("Confidential HTTP validation result:");
     console.log(JSON.stringify(artifact, null, 2));
     console.log(`Artifact written to: ${artifactPath}`);
+    console.log(`Simulation proof written to: ${simulationArtifactPath}`);
   }
 }
 
