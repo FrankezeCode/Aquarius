@@ -357,7 +357,7 @@ sequenceDiagram
 ### How Confidential HTTP Supports Aquarius Non-Custodial Promise
 
 This section explains exactly how Confidential HTTP supports Aquarius' core promise:
-"mitigate risk without custody of user private keys or critical credentials."
+***"mitigate risk without custody of user private keys or critical credentials."***
 
 1. **Keeps API secrets/credentials out of normal node memory (enclave path).**
    - Aquarius dispatches confidential workflow payloads through the confidential boundary ([`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts)), including correlation and confidentiality markers.
