@@ -3,10 +3,16 @@
 # ==========================================================================
 # Workflow-specific settings for CRE CLI targets.
 # Each target defines user-workflow and workflow-artifacts groups.
+# Settings here override CRE Project Settings File values.
 #
-# This adapts Aquarius workflow execution to CRE CLI v1.3.0 settings format
-# while keeping the workflow logic in ./main.ts and simulation payload in
-# ./payload.local-simulation.json.
+# Example custom target:
+# my-target:
+#   user-workflow:
+#     workflow-name: "MyExampleWorkflow"    # Required: Workflow Registry name
+#   workflow-artifacts:
+#     workflow-path: "./main.ts"            # Path to workflow entry point
+#     config-path: "./config.yaml"          # Path to config file
+#     secrets-path: "../secrets.yaml"       # Path to secrets file (project root by default)
 
 # ==========================================================================
 staging-settings:
@@ -16,6 +22,7 @@ staging-settings:
     workflow-path: "./main.ts"
     config-path: "./config.staging.json"
     secrets-path: ""
+    
 
 # ==========================================================================
 production-settings:

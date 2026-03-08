@@ -33,17 +33,29 @@ Both artifacts contain:
 - `claim` text for submission safety
 - callback status/result with correlation ID
 
-## 3) Optional CRE CLI simulation command
+## 3) CRE CLI simulation command (validated)
 
-If running from a full CRE SDK project structure:
+From repository root:
 
 ```bash
-cre workflow simulate workflows/aave-risk \
+cre -T staging-settings workflow simulate workflows/aave-risk \
   --non-interactive \
   --trigger-index 0 \
-  --http-payload @./workflows/aave-risk/payload.local-simulation.json \
-  --target staging-settings \
   --engine-logs
 ```
 
-Use this to demonstrate payload compatibility with the same Aquarius contract.
+This command was validated in this repository and produces engine logs plus
+`Workflow Simulation Result` with `status: "completed"`.
+Because this workflow uses a cron trigger (`trigger-index 0`), `--http-payload`
+is not required for this simulation path.
+
+## 4) Submission checklist (strict CLI-proof judges)
+
+- Run `cre version` and keep output screenshot.
+- Run the CLI simulation command above and keep success screenshot.
+- Keep one screenshot that includes `--engine-logs` output.
+- Add screenshots to:
+  - `docs/submission/screenshots/cre-cli-sim-success.png`
+  - `docs/submission/screenshots/cre-cli-sim-engine-logs.png`
+- Keep CLI log artifact:
+  - `artifacts/cre-cli-sim-output.txt`

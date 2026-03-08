@@ -56,12 +56,16 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [Hosted split (recommended)](#hosted-split-recommended)
   - [Commands](#commands)
   - [Testing](#testing)
-    - [local_don_ccc End-to-End Semantics](#local_don_ccc-end-to-end-semantics)
+    - [local\_don\_ccc End-to-End Semantics](#local_don_ccc-end-to-end-semantics)
   - [Validation Report (End-to-End Proof)](#validation-report-end-to-end-proof)
     - [Latest successful run summary](#latest-successful-run-summary)
     - [Stage highlights](#stage-highlights)
     - [Tenderly explorer links (from latest run)](#tenderly-explorer-links-from-latest-run)
   - [Confidential HTTP Local Simulation Proof](#confidential-http-local-simulation-proof)
+  - [CRE Requirement Compliance Checklist (Submission Proof Pack)](#cre-requirement-compliance-checklist-submission-proof-pack)
+    - [Checklist](#checklist)
+    - [Existing proof data already included in repo](#existing-proof-data-already-included-in-repo)
+    - [Latest proof snapshot (from repo artifacts)](#latest-proof-snapshot-from-repo-artifacts)
   - [Chainlink Usage (Direct Code Links)](#chainlink-usage-direct-code-links)
   - [Known Issues and Limitations](#known-issues-and-limitations)
   - [Future Developments](#future-developments)
@@ -258,6 +262,21 @@ Validated claim for this track submission:
 
 ## Workflow Flows
 
+Before diving into each flow, the key architectural point is that Aquarius has a shared orchestration entry point:
+[`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts).
+
+`runCREWorkflow()` is the common application-layer coordinator used by both CLI and API surfaces. It connects the deterministic risk pipeline (signals -> scoring -> monitoring), escalation logic, agent decisioning, optional LLM reasoning, and action dispatch into one coherent execution path. This gives all system layers a consistent contract and keeps behavior aligned across frontend polling, backend APIs, SDK consumers, and simulation tooling.
+
+In short: different interfaces call the same orchestration core, so the project behaves as one connected system rather than disconnected features.
+
+Quick navigation to implementation:
+
+- [Risk Monitoring Flow](#risk-monitoring-flow) → [`apps/api/src/protocols/aave/risk-intelligence/monitor.ts`](apps/api/src/protocols/aave/risk-intelligence/monitor.ts), [`apps/api/src/protocols/aave/risk-intelligence/signals.ts`](apps/api/src/protocols/aave/risk-intelligence/signals.ts), [`apps/api/src/protocols/aave/risk-intelligence/scorer.ts`](apps/api/src/protocols/aave/risk-intelligence/scorer.ts)
+- [Escalation Flow](#escalation-flow) → [`apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts), [`apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts), [`apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts`](apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts)
+- [Mitigation Execution Flow](#mitigation-execution-flow) → [`apps/api/src/infrastructure/execution/execution-router.ts`](apps/api/src/infrastructure/execution/execution-router.ts), [`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts), [`apps/api/src/infrastructure/execution/mitigation-registry.ts`](apps/api/src/infrastructure/execution/mitigation-registry.ts)
+- [Real-Time Risk Copilot Flow](#real-time-risk-copilot-flow) → [`apps/api/src/routes/v1/copilot/chat.ts`](apps/api/src/routes/v1/copilot/chat.ts), [`apps/api/src/services/health-engine/ai-context.ts`](apps/api/src/services/health-engine/ai-context.ts), [`packages/sdk/src/agent/llm-agent.ts`](packages/sdk/src/agent/llm-agent.ts)
+- [Confidential HTTP Local Flow](#confidential-http-local-flow) → [`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts), [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts), [`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts)
+
 ### Risk Monitoring Flow
 
 1. ingest snapshots
@@ -265,11 +284,21 @@ Validated claim for this track submission:
 3. derive score and escalation context
 4. emit API/UI/SDK-consumable outputs
 
+Implemented in:
+[`apps/api/src/protocols/aave/risk-intelligence/monitor.ts`](apps/api/src/protocols/aave/risk-intelligence/monitor.ts),
+[`apps/api/src/protocols/aave/risk-intelligence/signals.ts`](apps/api/src/protocols/aave/risk-intelligence/signals.ts),
+[`apps/api/src/protocols/aave/risk-intelligence/scorer.ts`](apps/api/src/protocols/aave/risk-intelligence/scorer.ts).
+
 ### Escalation Flow
 
 1. risk pressure accumulates
 2. state machine updates stage
 3. action posture becomes observe/protect/escalate
+
+Implemented in:
+[`apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts),
+[`apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts),
+[`apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts`](apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts).
 
 ### Mitigation Execution Flow
 
@@ -278,6 +307,11 @@ Validated claim for this track submission:
 3. execute path A or path B
 4. verify measurable pre/post state (e.g., HF improvement)
 
+Implemented in:
+[`apps/api/src/infrastructure/execution/execution-router.ts`](apps/api/src/infrastructure/execution/execution-router.ts),
+[`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts),
+[`apps/api/src/infrastructure/execution/mitigation-registry.ts`](apps/api/src/infrastructure/execution/mitigation-registry.ts).
+
 ### Real-Time Risk Copilot Flow
 
 1. user asks question in floating copilot
@@ -285,6 +319,11 @@ Validated claim for this track submission:
 3. backend assembles deterministic context
 4. advisory layer adds Groq interpretation
 5. fallback-safe response returned if model unavailable
+
+Implemented in:
+[`apps/api/src/routes/v1/copilot/chat.ts`](apps/api/src/routes/v1/copilot/chat.ts),
+[`apps/api/src/services/health-engine/ai-context.ts`](apps/api/src/services/health-engine/ai-context.ts),
+[`packages/sdk/src/agent/llm-agent.ts`](packages/sdk/src/agent/llm-agent.ts).
 
 ### Confidential HTTP Local Flow
 
@@ -298,6 +337,11 @@ Validated claim for this track submission:
    - builds deterministic execution context
    - routes to CCC execution with timeout guard (`LOCAL_DON_CCC_EXECUTION_TIMEOUT_MS`)
 6. artifacts are written for submission evidence
+
+Implemented in:
+[`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts),
+[`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts),
+[`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts).
 
 ```mermaid
 sequenceDiagram
@@ -404,6 +448,7 @@ pnpm dev --filter web
 | `pnpm run:cre` | Run CRE simulation |
 | `pnpm run:ccc-demo` | Run CCC demo simulation |
 | `pnpm run:local-cre-don-sim` | Run local CRE DON confidential simulation proof |
+| `cre -T staging-settings workflow simulate workflows/aave-risk --non-interactive --trigger-index 0 --engine-logs` | Run validated CRE CLI workflow simulation proof |
 | `node --import tsx --test apps/api/tests/protocols/aave/local-don-ccc.execution.integration.test.ts` | Run local_don_ccc callback->execution integration proof |
 | `pnpm run:full-validation` | Run full architecture validation |
 
@@ -526,6 +571,83 @@ Evidence fields in the generated proof include:
 - `callbackStatusCode = 200`
 - `callbackBody.ingestionMode = "confidential-http"`
 - matching `correlationId` between dispatch and callback
+
+## CRE Requirement Compliance Checklist (Submission Proof Pack)
+
+This section provides verifiable proof that the project satisfies the requirement:
+
+> "Build, simulate, or deploy a CRE Workflow that's used as an orchestration layer within your project..."
+
+All required workflow logic, simulation evidence, and artifacts are included in this repository.
+
+### Checklist
+
+- [x] **Workflow exists and is used as an orchestration layer**
+  - Core orchestrator: [`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts)
+  - API entrypoint using same workflow: [`apps/api/src/routes/cre/index.ts`](apps/api/src/routes/cre/index.ts)
+  - CLI runner using same workflow: [`scripts/run-cre-simulation.ts`](scripts/run-cre-simulation.ts)
+
+- [x] **Integrates blockchain + external system / AI path**
+  - Blockchain risk data + scoring: [`apps/api/src/protocols/aave/risk-intelligence/monitor.ts`](apps/api/src/protocols/aave/risk-intelligence/monitor.ts)
+  - AI agent decisioning: [`apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts`](apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts)
+  - Optional LLM reasoning: [`packages/sdk/src/agent/llm-agent.ts`](packages/sdk/src/agent/llm-agent.ts)
+  - Confidential external callback orchestration: [`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts)
+
+- [x] **Successful local DON simulation artifacts captured**
+  - [`artifacts/confidential-http-validation.json`](artifacts/confidential-http-validation.json)
+  - [`artifacts/local-cre-don-simulation-proof.json`](artifacts/local-cre-don-simulation-proof.json)
+
+- [x] **CRE CLI simulation evidence**
+  - Verified command:
+    ```bash
+    cre -T staging-settings workflow simulate workflows/aave-risk \
+      --non-interactive \
+      --trigger-index 0 \
+      --engine-logs
+    ```
+  - Captured CLI proof logs:
+    - [`artifacts/cre-cli-sim-output.txt`](artifacts/cre-cli-sim-output.txt)
+    - [`artifacts/cre-cli-version.txt`](artifacts/cre-cli-version.txt)
+  - Confirmed success markers in output:
+    - `✓ Workflow compiled`
+    - `Running trigger trigger=cron-trigger@1.0.0`
+    - `✓ Workflow Simulation Result`
+    - `"status": "completed"`
+    - `Simulation complete! Ready to deploy your workflow?`
+  - Note: this workflow is cron-triggered, so `--http-payload` is not required for trigger index `0`.
+
+### Existing proof data already included in repo
+
+- Local DON simulation runbook: [`docs/confidential-http-local-simulation.md`](docs/confidential-http-local-simulation.md)
+- Simulation payload used for CLI compatibility: [`workflows/aave-risk/payload.local-simulation.json`](workflows/aave-risk/payload.local-simulation.json)
+- API ingest confirmation path: [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts)
+- Screenshot slots for submission package: [`docs/submission/screenshots/README.md`](docs/submission/screenshots/README.md)
+
+### Latest proof snapshot (from repo artifacts)
+
+From [`artifacts/local-cre-don-simulation-proof.json`](artifacts/local-cre-don-simulation-proof.json):
+
+- `success: true`
+- `validationMode: "local_cre_don_simulation"`
+- `workflowId: "aave-risk-confidential-http"`
+- `dispatchReceived: true`
+- `dispatchAuthorized: true`
+- `callbackStatusCode: 200`
+- `callbackBody.ingestionMode: "confidential-http"`
+- `callbackBody.correlationId == correlationId` (end-to-end propagation confirmed)
+
+From [`artifacts/cre-cli-sim-output.txt`](artifacts/cre-cli-sim-output.txt):
+
+- CRE target used: `staging-settings`
+- Trigger executed: `cron-trigger@1.0.0`
+- Workflow name: `aave-risk-staging`
+- Simulation result status: `completed`
+- Final CLI banner confirms simulation completion
+- Benign simulation-only warnings observed:
+  - `WARNING: Debug mode is enabled`
+  - `no billing client has been configured`
+  - These do not invalidate local CLI simulation success.
+
 
 ## Chainlink Usage (Direct Code Links)
 
