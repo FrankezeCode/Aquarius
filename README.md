@@ -30,6 +30,7 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [DeFi user problem](#defi-user-problem)
     - [Chainlink ecosystem problem](#chainlink-ecosystem-problem)
   - [How It Works](#how-it-works)
+  - [Quick System Flow](#quick-system-flow)
   - [Architecture Diagram](#architecture-diagram)
   - [Contracts and Architecture](#contracts-and-architecture)
     - [Core Contracts](#core-contracts)
@@ -44,6 +45,7 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [Confidential HTTP (Local DON Simulation Validation)](#confidential-http-local-don-simulation-validation)
     - [Chainlink CCIP (Cross-Chain Risk Propagation)](#chainlink-ccip-cross-chain-risk-propagation)
   - [Workflow Flows](#workflow-flows)
+    - [End-to-End Workflow Overview](#end-to-end-workflow-overview)
     - [Risk Monitoring Flow](#risk-monitoring-flow)
     - [Escalation Flow](#escalation-flow)
     - [Mitigation Execution Flow](#mitigation-execution-flow)
@@ -117,6 +119,22 @@ Chainlink infrastructure provides execution and messaging rails, but DeFi mitiga
    - vault-backed path (buffer vault reinforcement)
 6. Cross-chain risk posture can be propagated through CCIP-style signaling.
 7. The real-time Risk AI Copilot explains current position context in informational mode.
+
+## Quick System Flow
+
+```mermaid
+flowchart TD
+  A[Aave / Blockchain]
+  B[Risk Monitor]
+  C[CRE Workflow]
+  D[AI Risk Agent]
+  E[Confidential HTTP Action]
+  F[External System Callback]
+
+  A --> B --> C --> D --> E --> F
+```
+
+This view is optimized for quick understanding of Aquarius Protocol : chain data enters Aquarius, risk is evaluated, CRE orchestrates decisions, actions are dispatched via confidential HTTP, and callbacks return execution outcomes.
 
 ## Architecture Diagram
 
@@ -269,8 +287,25 @@ Before diving into each flow, the key architectural point is that Aquarius has a
 
 In short: different interfaces call the same orchestration core, so the project behaves as one connected system rather than disconnected features.
 
-Quick Implementation Flow:
+### End-to-End Workflow Overview
 
+```mermaid
+flowchart LR
+  A[Aave Blockchain / Market Data]
+  B[Risk Monitor]
+  C[CRE Orchestration<br/>runCREWorkflow()]
+  D[AI Risk Agent]
+  E[Confidential HTTP Action]
+  F[External System Callback]
+  G[Aquarius Webhook Ingest]
+  H[Execution Router local_don_ccc]
+  I[CCC Adapter / Mitigation Path]
+  J[Proof Artifacts]
+
+  A --> B --> C --> D --> E --> F --> G --> H --> I
+  E --> J
+  G --> J
+```
 
 ### Risk Monitoring Flow
 
