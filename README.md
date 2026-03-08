@@ -291,16 +291,16 @@ In short: different interfaces call the same orchestration core, so the project 
 
 ```mermaid
 flowchart LR
-  A[Aave Blockchain / Market Data]
-  B[Risk Monitor]
-  C[CRE Orchestration<br/>runCREWorkflow()]
-  D[AI Risk Agent]
-  E[Confidential HTTP Action]
-  F[External System Callback]
-  G[Aquarius Webhook Ingest]
-  H[Execution Router local_don_ccc]
-  I[CCC Adapter / Mitigation Path]
-  J[Proof Artifacts]
+  A["Aave Blockchain / Market Data"]
+  B["Risk Monitor"]
+  C["CRE Orchestration\nrunCREWorkflow()"]
+  D["AI Risk Agent"]
+  E["Confidential HTTP Action"]
+  F["External System Callback"]
+  G["Aquarius Webhook Ingest"]
+  H["Execution Router local_don_ccc"]
+  I["CCC Adapter / Mitigation Path"]
+  J["Proof Artifacts"]
 
   A --> B --> C --> D --> E --> F --> G --> H --> I
   E --> J
