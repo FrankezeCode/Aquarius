@@ -269,13 +269,8 @@ Before diving into each flow, the key architectural point is that Aquarius has a
 
 In short: different interfaces call the same orchestration core, so the project behaves as one connected system rather than disconnected features.
 
-Quick navigation to implementation:
+Quick Implementation Flow:
 
-- [Risk Monitoring Flow](#risk-monitoring-flow) → [`apps/api/src/protocols/aave/risk-intelligence/monitor.ts`](apps/api/src/protocols/aave/risk-intelligence/monitor.ts), [`apps/api/src/protocols/aave/risk-intelligence/signals.ts`](apps/api/src/protocols/aave/risk-intelligence/signals.ts), [`apps/api/src/protocols/aave/risk-intelligence/scorer.ts`](apps/api/src/protocols/aave/risk-intelligence/scorer.ts)
-- [Escalation Flow](#escalation-flow) → [`apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-state-machine.ts), [`apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts`](apps/api/src/protocols/aave/risk-intelligence/escalation-store.ts), [`apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts`](apps/api/src/protocols/aave/ai-agents/ai-risk-agent.ts)
-- [Mitigation Execution Flow](#mitigation-execution-flow) → [`apps/api/src/infrastructure/execution/execution-router.ts`](apps/api/src/infrastructure/execution/execution-router.ts), [`apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts`](apps/api/src/infrastructure/ccc/CccExecutionAdapter.ts), [`apps/api/src/infrastructure/execution/mitigation-registry.ts`](apps/api/src/infrastructure/execution/mitigation-registry.ts)
-- [Real-Time Risk Copilot Flow](#real-time-risk-copilot-flow) → [`apps/api/src/routes/v1/copilot/chat.ts`](apps/api/src/routes/v1/copilot/chat.ts), [`apps/api/src/services/health-engine/ai-context.ts`](apps/api/src/services/health-engine/ai-context.ts), [`packages/sdk/src/agent/llm-agent.ts`](packages/sdk/src/agent/llm-agent.ts)
-- [Confidential HTTP Local Flow](#confidential-http-local-flow) → [`apps/api/src/protocols/aave/action-layer/cre-adapter.ts`](apps/api/src/protocols/aave/action-layer/cre-adapter.ts), [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts), [`scripts/run-confidential-http-validation.ts`](scripts/run-confidential-http-validation.ts)
 
 ### Risk Monitoring Flow
 
