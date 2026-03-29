@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import rateLimit from "@fastify/rate-limit";
 import { loadConfig } from "./config/index.js";
 import { registerCors } from "./middleware/cors.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
@@ -14,18 +15,53 @@ export async function buildApp() {
   await requestIdMiddleware(app);
   await registerCors(app);
 
-  // ── Existing protocol routes (preserved for backward compatibility) ──
-  await app.register(registerProtocolRoutes, { prefix: "/api/v1/protocol" });
+  // ── Public API /api/v1 (rate-limited in non-test) ───────────────────
+  await app.register(
+    async (scoped) => {
+      if (config.rateLimitEnabled) {
+        await scoped.register(rateLimit, {
+          global: true,
+          max: config.rateLimitPublicMax,
+          timeWindow: "1 minute",
+        });
+      }
+      await scoped.register(registerProtocolRoutes, { prefix: "/protocol" });
+      await scoped.register(registerV1Routes, {
+        copilotRateLimitMax: config.rateLimitCopilotMax,
+      });
+    },
+    { prefix: "/api/v1" }
+  );
 
-  // ── New DDD-aligned route layers ─────────────────────────────────────
-  // v1 routes: public API versioned under /api/v1/{protocol}
-  await app.register(registerV1Routes, { prefix: "/api/v1" });
+  // ── Internal ingestion (CRE webhooks, etc.) ─────────────────────────
+  await app.register(
+    async (scoped) => {
+      if (config.rateLimitEnabled) {
+        await scoped.register(rateLimit, {
+          global: true,
+          max: config.rateLimitInternalWebhookMax,
+          timeWindow: "1 minute",
+        });
+      }
+      await scoped.register(registerInternalRoutes);
+    },
+    { prefix: "/api/internal" }
+  );
 
-  // Internal routes: CRE webhooks, ingestion pipelines (not public)
-  await app.register(registerInternalRoutes, { prefix: "/api/internal" });
-
-  // CRE workflow execution endpoint
-  await app.register(registerCRERoutes, { prefix: "/api/cre" });
+  // ── CRE workflow HTTP surface ─────────────────────────────────────
+  await app.register(
+    async (scoped) => {
+      if (config.rateLimitEnabled) {
+        await scoped.register(rateLimit, {
+          global: true,
+          max: config.rateLimitCreMax,
+          timeWindow: "1 minute",
+        });
+      }
+      await scoped.register(registerCRERoutes);
+    },
+    { prefix: "/api/cre" }
+  );
 
   app.get("/health", async () => ({ status: "ok" }));
 

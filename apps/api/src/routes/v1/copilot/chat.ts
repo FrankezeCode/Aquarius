@@ -8,12 +8,26 @@ import { logCopilotTelemetry } from "../../../services/copilot/telemetry.js";
 const contextAssembler = new CopilotContextAssembler();
 const advisoryAgent = new CopilotAdvisoryAgent();
 
-export function createCopilotChatRoute() {
+export function createCopilotChatRoute(opts?: {
+  copilotRateLimitMax?: number;
+}) {
+  const routeOpts =
+    opts?.copilotRateLimitMax != null && opts.copilotRateLimitMax > 0
+      ? {
+          config: {
+            rateLimit: {
+              max: opts.copilotRateLimitMax,
+              timeWindow: "1 minute" as const,
+            },
+          },
+        }
+      : {};
+
   return async function copilotChatPlugin(
     app: FastifyInstance,
     _opts: FastifyPluginOptions
   ) {
-    app.post("/chat", async (request, reply) => {
+    app.post("/chat", routeOpts, async (request, reply) => {
       const requestId = (request as { requestId?: string }).requestId ?? "unknown";
       const startedAt = Date.now();
 

@@ -16,9 +16,13 @@ import { registerAaveRiskApiRoutes } from "./aave-risk/index.js";
 import { registerCopilotRoutes } from "./copilot/index.js";
 import { registerAgentEnrollmentRoutes } from "./agent-enrollment/index.js";
 
+export interface V1RouteRegisterOpts extends FastifyPluginOptions {
+  copilotRateLimitMax?: number;
+}
+
 export async function registerV1Routes(
   app: FastifyInstance,
-  _opts: FastifyPluginOptions
+  opts: V1RouteRegisterOpts = {}
 ) {
   await app.register(registerAaveRoutes, { prefix: "/aave" });
   await app.register(registerUniswapRoutes, { prefix: "/uniswap" });
@@ -28,7 +32,10 @@ export async function registerV1Routes(
   await app.register(registerAaveRiskApiRoutes, { prefix: "/aave-risk" });
 
   // ── API-as-a-Product: Risk Co-Pilot endpoints (informational mode) ─
-  await app.register(registerCopilotRoutes, { prefix: "/copilot" });
+  await app.register(registerCopilotRoutes, {
+    prefix: "/copilot",
+    copilotRateLimitMax: opts.copilotRateLimitMax,
+  });
 
   // ── API-as-a-Product: Agent enrollment (phase A, in-memory) ─────────
   await app.register(registerAgentEnrollmentRoutes, { prefix: "/agent-enrollment" });

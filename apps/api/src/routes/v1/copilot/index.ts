@@ -3,8 +3,9 @@ import { createCopilotChatRoute } from "./chat.js";
 
 export async function registerCopilotRoutes(
   app: FastifyInstance,
-  _opts: FastifyPluginOptions
+  opts: FastifyPluginOptions & { copilotRateLimitMax?: number } = {}
 ) {
-  await app.register(createCopilotChatRoute());
+  const { copilotRateLimitMax } = opts;
+  await app.register(createCopilotChatRoute({ copilotRateLimitMax }));
 }
 

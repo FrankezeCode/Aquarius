@@ -156,6 +156,55 @@ describe("CRE Webhook / aave-risk integration", () => {
     assert.equal(r3.statusCode, 400);
   });
 
+  it("returns 400 when data is not a record", async () => {
+    const app = await buildApp();
+    const res = await postWebhook(app, {
+      workflowId: "aave-risk",
+      timestamp: Date.now(),
+      chainId: "ethereum",
+      data: [] as unknown as Record<string, unknown>,
+    });
+    assert.equal(res.statusCode, 400);
+    const body = res.json() as { error?: string };
+    assert.equal(body.error, "Invalid CRE webhook payload");
+  });
+
+  it("returns 400 for non-finite timestamp", async () => {
+    const app = await buildApp();
+    const res = await postWebhook(app, {
+      workflowId: "aave-risk",
+      timestamp: Number.NaN,
+      chainId: "ethereum",
+      data: {},
+    });
+    assert.equal(res.statusCode, 400);
+  });
+
+  it("returns 400 when workflowId exceeds max length", async () => {
+    const app = await buildApp();
+    const res = await postWebhook(app, {
+      workflowId: "x".repeat(257),
+      timestamp: Date.now(),
+      chainId: "ethereum",
+      data: {},
+    });
+    assert.equal(res.statusCode, 400);
+  });
+
+  it("accepts payload with omitted data (defaults to empty object)", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/internal/ingest/cre-webhook",
+      payload: {
+        workflowId: "aave-risk",
+        timestamp: Date.now(),
+        chainId: "ethereum",
+      },
+    });
+    assert.equal(res.statusCode, 200);
+  });
+
   it("returns 202 for unknown workflow IDs", async () => {
     const app = await buildApp();
     const res = await postWebhook(app, {

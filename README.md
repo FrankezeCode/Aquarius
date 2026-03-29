@@ -70,6 +70,13 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [Latest proof snapshot (from repo artifacts)](#latest-proof-snapshot-from-repo-artifacts)
   - [Chainlink Usage (Direct Code Links)](#chainlink-usage-direct-code-links)
   - [Known Issues and Limitations](#known-issues-and-limitations)
+  - [Production considerations](#production-considerations)
+    - [Post-hackathon API hardening (implemented)](#post-hackathon-api-hardening-implemented)
+    - [Security and API surface](#security-and-api-surface)
+    - [State persistence and scaling](#state-persistence-and-scaling)
+    - [Operations and observability](#operations-and-observability)
+    - [Real CRE and DON readiness](#real-cre-and-don-readiness)
+    - [User-facing and compliance posture](#user-facing-and-compliance-posture)
   - [Future Developments](#future-developments)
   - [Challenges We Ran Into](#challenges-we-ran-into)
   - [Frontend](#frontend)
@@ -723,7 +730,51 @@ CCIP propagation:
 - Full production DON Confidential HTTP gateway-trigger evidence (JWT + deployed workflow endpoint) is reserved for post-hackathon hardening.
 - local_don_ccc replay/idempotency ledger is in-memory (process-local), not yet backed by persistent shared storage.
 - Some user flows are intentionally simulation-first for hackathon validation velocity.
-- Production hardening (persistent infra/state and operational controls) is an actve next step.
+- Production hardening (persistent infra/state and operational controls) is an active next step. For a structured production and CRE-readiness checklist, see [Production considerations](#production-considerations).
+
+## Production considerations
+
+Aquarius is API-first intelligence with optional orchestration and execution paths. Moving from hackathon validation to production requires explicit choices about what is enabled in each environment, durable state where correctness matters, and operational controls. This section summarizes the current posture and the hardening work tracked in code and docs.
+
+### Post-hackathon API hardening (implemented)
+
+After the hackathon submission, the API layer was tightened toward the goals described under [Security and API surface](#security-and-api-surface) and [Real CRE and DON readiness](#real-cre-and-don-readiness):
+
+- **CRE webhook body validation (Zod)** — `POST /api/internal/ingest/cre-webhook` payloads are validated with a strict schema (`workflowId`, `chainId`, finite `timestamp`, object `data`). Invalid bodies return `400` with a stable error shape; detailed validation issues are logged server-side only. Schema and parser: [`apps/api/src/routes/internal/ingest/cre-webhook.schema.ts`](apps/api/src/routes/internal/ingest/cre-webhook.schema.ts); handler: [`apps/api/src/routes/internal/ingest/cre-webhook.ts`](apps/api/src/routes/internal/ingest/cre-webhook.ts).
+- **Rate limiting (`@fastify/rate-limit`)** — Per-IP limits apply to `/api/v1` (public API), `/api/internal` (ingestion including CRE webhooks), and `/api/cre`, with a **stricter cap on** `POST /api/v1/copilot/chat`. Limits are **disabled when `NODE_ENV=test`** so the integration suite stays stable. Wiring: [`apps/api/src/app.ts`](apps/api/src/app.ts); copilot route override: [`apps/api/src/routes/v1/copilot/chat.ts`](apps/api/src/routes/v1/copilot/chat.ts).
+- **Configuration** — Limits and the test/production toggle are driven from environment variables documented in [`apps/api/src/config/index.ts`](apps/api/src/config/index.ts) (`RATE_LIMIT_ENABLED`, `RATE_LIMIT_PUBLIC_MAX`, `RATE_LIMIT_COPILOT_MAX`, `RATE_LIMIT_INTERNAL_WEBHOOK_MAX`, `RATE_LIMIT_CRE_MAX`).
+
+**Not yet done (follow-ups):** shared-secret or signed verification for the CRE webhook, durable idempotency storage for `local_don_ccc`, and broader Zod coverage on every public route—these remain part of the ongoing production checklist above.
+
+### Security and API surface
+
+- Extend strict schema validation (for example Zod) to **all** public and internal routes; **CRE webhook ingest is already covered** (see [Post-hackathon API hardening (implemented)](#post-hackathon-api-hardening-implemented)).
+- Rate limiting is in place for `/api/v1`, `/api/internal`, `/api/cre`, and a stricter cap on copilot chat; tune limits via environment variables and keep abuse-prone surfaces reviewed as new endpoints ship.
+- Keep secrets (RPC endpoints, API keys, webhook signing material) in environment configuration only; never commit or log them.
+- Treat wallet addresses as identifiers, not proof of trust; separate authentication from authorization for any sensitive operation.
+
+### State persistence and scaling
+
+- Process-local or in-memory stores are appropriate for demos and single-node development; production multi-instance deployments need durable storage for user enrollment, policies, and execution idempotency or replay ledgers.
+- Any "at most once" or "exactly once" execution semantics must be backed by shared storage and tested across restarts and horizontal scale.
+
+### Operations and observability
+
+- Use structured logs without sensitive payloads; propagate correlation IDs from HTTP ingress through workflows and callbacks.
+- Define SLOs for read APIs versus execution paths; alert on elevated errors, webhook failures, and execution timeouts.
+- Automate testing in CI and prefer a staging environment that mirrors production configuration.
+
+### Real CRE and DON readiness
+
+- Local CRE DON simulation validates architecture; production DON deployment adds requirements such as stable callback URLs, authenticated Confidential HTTP or gateway triggers, workflow versioning aligned with the API, and operational billing configuration.
+- Before cutover, verify callback authentication, durable idempotency for correlation identifiers, and rollback or feature-flag controls for execution modes.
+
+### User-facing and compliance posture
+
+- Risk signals and copilot output are advisory; they are not financial guarantees. Demo or simulation flows must be clearly labeled and disabled or isolated in production when they do not represent real on-chain outcomes.
+- Minimize collection of wallet-linked data; document retention and consent where insights could reveal user strategy.
+
+For a concise list of current submission-time limitations, see [Known Issues and Limitations](#known-issues-and-limitations). For planned product direction, see [Future Developments](#future-developments).
 
 ## Future Developments
 

@@ -43,13 +43,10 @@ import { queryService } from "../../v1/aave-risk/index.js";
 import { createCccAdapter } from "../../../infrastructure/ccc/executionFactory.js";
 import { ExecutionRouter } from "../../../infrastructure/execution/execution-router.js";
 import type { ExecutionContext } from "../../../protocols/shared/types/execution-context.js";
-
-export interface CREWebhookPayload {
-  workflowId: string;
-  timestamp: number;
-  chainId: string;
-  data: Record<string, unknown>;
-}
+import {
+  type CREWebhookPayload,
+  parseCreWebhookBody,
+} from "./cre-webhook.schema.js";
 
 /** Workflow IDs that trigger the Aave risk-intelligence pipeline. */
 const AAVE_RISK_WORKFLOWS = new Set([
@@ -226,17 +223,18 @@ export async function registerCREWebhookRoute(
   _opts: FastifyPluginOptions
 ) {
   app.post<{ Body: CREWebhookPayload }>("/", async (request, reply) => {
-    const payload = request.body;
-
-    // Validate required fields
-    if (!payload?.workflowId || !payload?.timestamp || !payload?.chainId) {
+    const parsed = parseCreWebhookBody(request.body);
+    if (!parsed.success) {
+      request.log.warn(
+        { validation: parsed.error.flatten() },
+        "CRE webhook payload validation failed"
+      );
       return reply.status(400).send({
         error: "Invalid CRE webhook payload",
-        required: ["workflowId", "timestamp", "chainId", "data"],
+        message: "Request body failed validation.",
       });
     }
-
-    // TODO: Add Zod schema validation per security rules
+    const payload = parsed.data;
 
     // ── Route to Aave Risk Intelligence pipeline ───────────────────
     if (AAVE_RISK_WORKFLOWS.has(payload.workflowId)) {

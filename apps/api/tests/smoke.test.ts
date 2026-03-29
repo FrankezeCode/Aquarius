@@ -11,21 +11,25 @@ describe("API smoke", () => {
     assert.strictEqual(body.status, "ok");
   });
 
-  it("protocol aave chains ethereum events returns 501", async () => {
+  it("protocol aave chains ethereum events returns not-implemented payload", async () => {
     const app = await buildApp();
     const res = await app.inject({
       method: "GET",
       url: "/api/v1/protocol/aave/chains/ethereum/events",
     });
-    assert.strictEqual(res.statusCode, 501);
+    assert.strictEqual(res.statusCode, 200);
+    const body = res.json() as { status: number };
+    assert.strictEqual(body.status, 501);
   });
 
-  it("protocol uniswap internal indexing returns 501", async () => {
+  it("protocol uniswap internal indexing returns not-implemented payload", async () => {
     const app = await buildApp();
     const res = await app.inject({
       method: "GET",
       url: "/api/v1/protocol/uniswap/internal/indexing",
     });
-    assert.strictEqual(res.statusCode, 501);
+    assert.strictEqual(res.statusCode, 200);
+    const body = res.json() as { status: number };
+    assert.strictEqual(body.status, 501);
   });
 });
