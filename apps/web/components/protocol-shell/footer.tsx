@@ -20,7 +20,7 @@ const Footer = () => {
               <span className="text-lg font-semibold">Aquarius</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Making the unseen, seen. Protocol intelligence for DeFi.
+              The new standard for protecting on-chain finance—built to prevent avoidable losses before they happen.
             </p>
           </div>
 

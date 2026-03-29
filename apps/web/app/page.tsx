@@ -127,10 +127,10 @@ const Index = () => {
               </span>
             </motion.div>
 
-            {/* Headline — wider than max-w-4xl so text-9xl fits on one line */}
+            {/* Headline — negative margins only md+ so mobile keeps container px-4 breathing room */}
             <motion.h1
               variants={fadeInUp}
-              className="hero-laser-container text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter mb-6 -mx-8 md:-mx-16 lg:-mx-24"
+              className="hero-laser-container text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter mb-6 md:-mx-16 lg:-mx-24"
             >
               <span className="block">Protection at</span>
               <span className="block hero-chrome-gradient">Hyper-Speed.</span>
@@ -149,7 +149,9 @@ const Index = () => {
               variants={fadeInUp}
               className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             >
-              Continuously monitors health factors, account exposure, and on-chain stress signals — starting with Aave — and escalates before liquidation risk becomes inevitable.
+              Continuously monitors health factors, account exposure, and on-chain stress signals{" "}
+              <span className="text-white">— starting with Aave —</span> and escalates before
+              liquidation risk becomes inevitable.
             </motion.p>
 
             {/* CTAs */}
@@ -220,13 +222,20 @@ const Index = () => {
               {
                 step: "02",
                 title: "See Live Activity",
-                description: "Watch real on-chain earning, liquidations, and risk events as they happen.",
+                description: "Watch real on-chain risk events as they happen.",
                 icon: Activity,
               },
               {
                 step: "03",
                 title: "Act with Clarity",
-                description: "Understand exactly where value flows and why — then make informed decisions.",
+                description: (
+                  <>
+                    Understand how, when, where, and why risk is building—then decide manually
+                    or let{" "}
+                    <span className="font-bold text-white">Aqua agents</span> act on your
+                    behalf 24/7, so you&apos;re not glued to a dashboard.
+                  </>
+                ),
                 icon: BarChart3,
               },
             ].map((item, index) => (
