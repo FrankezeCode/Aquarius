@@ -47,11 +47,16 @@ function IntelCard({
   sublabel?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 space-y-1">
+    <div className="min-w-0 rounded-lg border border-border/50 bg-[#111214] px-3 py-3 sm:px-4 space-y-1">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
         {label}
       </span>
-      <p className={cn("text-sm font-semibold", valueClass ?? "text-foreground")}>
+      <p
+        className={cn(
+          "min-w-0 break-words text-sm font-semibold",
+          valueClass ?? "text-foreground",
+        )}
+      >
         {value}
       </p>
       {sublabel && (
@@ -63,7 +68,7 @@ function IntelCard({
 
 function LatencyCard({ label, ms }: { label: string; ms: number }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 flex flex-col items-start gap-1">
+    <div className="min-w-0 rounded-lg border border-border/50 bg-[#111214] px-3 py-3 sm:px-4 flex flex-col items-start gap-1">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
         {label}
       </span>
@@ -83,9 +88,9 @@ export function IntelligenceLayers({ data, className }: IntelligenceLayersProps)
 
       <div className="rounded-xl border border-border bg-[#0a0a0c] overflow-hidden flex flex-col">
         {/* Intelligence metrics */}
-        <div className="p-4 space-y-3">
+        <div className="min-w-0 p-3 space-y-3 sm:p-4">
           {/* Row 1: Risk Score + Stress Level */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <IntelCard
               label="Risk Score"
               value={String(data.riskScore)}
@@ -99,7 +104,7 @@ export function IntelligenceLayers({ data, className }: IntelligenceLayersProps)
           </div>
 
           {/* Row 2: Agent Decision + Confidence */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <IntelCard
               label="Agent Decision"
               value={data.agentDecision.replace(/_/g, " ")}
@@ -113,15 +118,15 @@ export function IntelligenceLayers({ data, className }: IntelligenceLayersProps)
 
           {/* LLM Reasoning (if available) */}
           {data.llmAction && (
-            <div className="rounded-lg border border-border/50 bg-[#111214] px-4 py-3 space-y-1">
+            <div className="min-w-0 rounded-lg border border-border/50 bg-[#111214] px-3 py-3 sm:px-4 space-y-1">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
                 LLM Reasoning
               </span>
-              <p className="text-sm text-foreground font-medium">
+              <p className="min-w-0 break-words text-sm font-medium text-foreground">
                 {data.llmAction}
               </p>
               {data.llmReason && (
-                <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">
+                <p className="min-w-0 break-words text-[11px] text-muted-foreground/60 italic leading-relaxed">
                   &ldquo;{data.llmReason}&rdquo;
                 </p>
               )}
@@ -130,11 +135,11 @@ export function IntelligenceLayers({ data, className }: IntelligenceLayersProps)
         </div>
 
         {/* Latency section */}
-        <div className="border-t border-border/50 p-4 space-y-2">
+        <div className="min-w-0 border-t border-border/50 p-3 space-y-2 sm:p-4">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-medium">
             Latency
           </span>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <LatencyCard label="Risk" ms={data.riskLatencyMs} />
             <LatencyCard label="Agent" ms={data.agentLatencyMs} />
             <LatencyCard label="LLM" ms={data.llmLatencyMs ?? 0} />

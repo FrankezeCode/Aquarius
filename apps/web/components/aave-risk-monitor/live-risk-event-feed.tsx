@@ -80,8 +80,8 @@ export function LiveRiskEventFeed({
 
       <div className="rounded-xl border border-border bg-[#0a0a0c] overflow-hidden flex flex-col">
         {/* Terminal header bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-[#111214]">
-          <span className="text-xs font-mono text-muted-foreground/80">
+        <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 border-b border-border/50 bg-[#111214] sm:px-4">
+          <span className="min-w-0 truncate text-xs font-mono text-muted-foreground/80">
             root@aquarius-agent:~
           </span>
           <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export function LiveRiskEventFeed({
         {/* Feed content */}
         <div
           ref={feedRef}
-          className="h-[280px] overflow-y-auto font-mono text-[13px] leading-relaxed"
+          className="h-[280px] overflow-y-auto font-mono text-[12px] leading-relaxed sm:text-[13px]"
           role="log"
           aria-live="polite"
         >
@@ -105,15 +105,15 @@ export function LiveRiskEventFeed({
               Waiting for events...
             </div>
           ) : (
-            <div className="p-4 space-y-1.5">
+            <div className="space-y-1.5 p-3 sm:p-4">
               {events.map((event) => (
-                <div key={event.id} className="flex gap-3">
-                  <span className="text-muted-foreground/50 shrink-0 tabular-nums">
+                <div key={event.id} className="flex min-w-0 gap-2 sm:gap-3">
+                  <span className="shrink-0 tabular-nums text-muted-foreground/50">
                     {event.timestamp}
                   </span>
                   <span
                     className={cn(
-                      "text-muted-foreground/90",
+                      "min-w-0 break-words text-muted-foreground/90",
                       event.severity && SEVERITY_COLORS[event.severity],
                     )}
                   >

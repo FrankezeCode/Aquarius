@@ -5,18 +5,20 @@ Built with love ❤️ for users, developers, and automated systems.
 In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b>.
 
 <p align="center">
-  <a href="https://aquarius-web.vercel.app/">
-    <img width="100%" alt="aquarius-landing page" src="https://github.com/user-attachments/assets/25908e99-67f0-469c-a8ed-3f4e76837bde" />
-  </a>
+  <strong><a href="https://youtu.be/YOUR_VIDEO_ID">▶ Walkthrough demo video</a></strong>
 </p>
 
 <p align="center">
+  <a href="https://youtu.be/YOUR_VIDEO_ID">
+    <img src="https://img.shields.io/badge/Walkthrough-Watch_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Walkthrough demo video" />
+  </a>
+  &nbsp;&nbsp;
   <a href="https://aquarius-web.vercel.app/">
-    <img src="https://img.shields.io/badge/Live_Demo-View_Project-7c3aed?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    <img src="https://img.shields.io/badge/Live_Project-View_Site-7c3aed?style=for-the-badge&logo=vercel&logoColor=white" alt="View live project" />
   </a>
   &nbsp;&nbsp;
   <a href="https://aquarius-web.vercel.app/docs/introduction">
-    <img src="https://img.shields.io/badge/Documentation-Read_Whitepaper-3b82f6?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentation" />
+    <img src="https://img.shields.io/badge/Docs-Whitepaper-3b82f6?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentation / whitepaper" />
   </a>
 </p>
 

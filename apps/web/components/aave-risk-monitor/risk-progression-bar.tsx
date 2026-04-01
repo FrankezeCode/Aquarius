@@ -58,6 +58,27 @@ const STAGE_CONFIG = {
 
 const STAGES = ["info", "confirm", "invalidate"] as const;
 
+/** Keeps stage titles in distinct columns; shorter copy on xs to avoid overlap. */
+function StageLabelContent({ stageKey }: { stageKey: (typeof STAGES)[number] }) {
+  if (stageKey === "info") {
+    return (
+      <>
+        <span className="block leading-tight">INFO</span>
+        <span className="block leading-tight">LAYER</span>
+      </>
+    );
+  }
+  if (stageKey === "confirm") {
+    return <span className="block leading-tight">CONFIRM</span>;
+  }
+  return (
+    <>
+      <span className="block leading-tight sm:hidden">INVALID</span>
+      <span className="hidden leading-tight sm:block">INVALIDATE</span>
+    </>
+  );
+}
+
 const STABILITY_CONFIG = {
   stable: {
     label: "Stable",
@@ -187,48 +208,80 @@ export function RiskProgressionBar({
         </span>
       </div>
 
-      <div className="rounded-xl border border-border bg-card/50 p-6 space-y-3">
-        {/* Metadata row above the track panel */}
-        <div className="relative flex items-center justify-between px-[2px]">
-          {/* Left: time badge + sublabel */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
-              {timeLabel}
-            </span>
-            <span className="text-xs text-muted-foreground">
+      <div className="rounded-xl border border-border bg-card/50 p-4 space-y-3 sm:p-6">
+        {/* Metadata row — stacked on mobile so accumulator never overlaps sublabel */}
+        <div>
+          {/* Mobile */}
+          <div className="flex flex-col gap-2 md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-[11px] font-mono tabular-nums px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+                {timeLabel}
+              </span>
+              <span className="text-xs font-mono tabular-nums text-muted-foreground">
+                {accumulator.toFixed(1)} / 100
+              </span>
+            </div>
+            <p className="text-xs leading-snug text-muted-foreground">
               {STAGE_CONFIG[stage].sublabel}
-            </span>
+            </p>
+            <div className="flex justify-end">
+              {lastAction ? (
+                <span
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50",
+                    lastAction.success
+                      ? "text-emerald-400"
+                      : "text-red-400",
+                  )}
+                >
+                  {lastAction.success ? "\u2713" : "\u2717"} {lastAction.type}
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+                  ··
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Center: accumulator value — absolutely positioned to center over CONFIRM (50%) */}
-          <span className="absolute left-1/2 -translate-x-1/2 text-xs font-mono tabular-nums text-muted-foreground">
-            {accumulator.toFixed(1)} / 100
-          </span>
-
-          {/* Right: last action badge */}
-          {lastAction && (
-            <span
-              className={cn(
-                "text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50",
-                lastAction.success
-                  ? "text-emerald-400"
-                  : "text-red-400",
+          {/* md+ — centered accumulator; relative so absolute is scoped to this row */}
+          <div className="relative hidden w-full items-center justify-between px-[2px] md:flex">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="shrink-0 text-[11px] font-mono tabular-nums px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+                {timeLabel}
+              </span>
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
+                {STAGE_CONFIG[stage].sublabel}
+              </span>
+            </div>
+            <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-xs font-mono tabular-nums text-muted-foreground">
+              {accumulator.toFixed(1)} / 100
+            </span>
+            <div className="flex flex-1 justify-end">
+              {lastAction ? (
+                <span
+                  className={cn(
+                    "shrink-0 text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50",
+                    lastAction.success
+                      ? "text-emerald-400"
+                      : "text-red-400",
+                  )}
+                >
+                  {lastAction.success ? "\u2713" : "\u2717"} {lastAction.type}
+                </span>
+              ) : (
+                <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+                  ··
+                </span>
               )}
-            >
-              {lastAction.success ? "\u2713" : "\u2717"} {lastAction.type}
-            </span>
-          )}
-          {!lastAction && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
-              ··
-            </span>
-          )}
+            </div>
+          </div>
         </div>
 
         {/* Dark charcoal panel — distinct control surface */}
-        <div className="rounded-lg bg-[#111214] border border-white/[0.06] px-5 py-4 space-y-3">
+        <div className="space-y-3 rounded-lg border border-white/[0.06] bg-[#111214] px-3 py-3 sm:px-5 sm:py-4">
           {/* Track with stage markers */}
-          <div className="relative flex items-center h-5">
+          <div className="relative flex h-5 items-center">
             {/* Inactive track (full width, dark muted grey) */}
             <div className="absolute left-[10px] right-[10px] top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#1a1c20]" />
 
@@ -270,8 +323,8 @@ export function RiskProgressionBar({
             })}
           </div>
 
-          {/* Stage labels below markers */}
-          <div className="flex items-start justify-between">
+          {/* Stage labels — grid locks each title to its column (no CONFIRM + INVALIDATE merge) */}
+          <div className="grid min-w-0 grid-cols-3 gap-x-2 sm:gap-x-4">
             {STAGES.map((s) => {
               const config = STAGE_CONFIG[s];
               const isActive = stage === s;
@@ -281,19 +334,21 @@ export function RiskProgressionBar({
                 <div
                   key={s}
                   className={cn(
-                    "flex flex-col",
-                    s === "info" ? "items-start" : s === "confirm" ? "items-center" : "items-end",
+                    "min-w-0 px-0.5",
+                    s === "info" && "text-left",
+                    s === "confirm" && "text-center",
+                    s === "invalidate" && "text-right",
                   )}
                 >
                   <span
                     className={cn(
-                      "text-xs uppercase tracking-wider transition-colors",
+                      "inline-block max-w-full break-words text-[9px] font-bold uppercase leading-snug tracking-tight transition-colors sm:text-[11px] sm:tracking-wider",
                       isActive || isPast
                         ? config.labelClass
                         : "text-muted-foreground/50",
                     )}
                   >
-                    {config.label}
+                    <StageLabelContent stageKey={s} />
                   </span>
                 </div>
               );

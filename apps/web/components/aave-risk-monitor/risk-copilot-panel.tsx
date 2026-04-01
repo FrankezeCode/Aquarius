@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRiskCopilot } from "@/lib/use-risk-copilot";
 import { cn } from "@/lib/utils";
@@ -56,24 +63,38 @@ export function RiskCopilotPanel({
             Context advisor.
           </p>
         </div>
-        <div className="w-[232px] space-y-1">
+        <div className="w-[232px] min-w-0 space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
             Mode
           </p>
-          <select
-            value={selectedMode}
-            onChange={(event) => setSelectedMode(event.target.value)}
-            className="h-8 w-full rounded-md border border-slate-700/70 bg-[#131722] px-2.5 text-[11px] text-slate-200 outline-none transition-colors focus:border-slate-500/70 focus:ring-2 focus:ring-primary/40"
-            aria-label="Risk co-pilot mode"
-          >
-            <option value="informational">Informational (Live)</option>
-            <option value="advisory-simulation" disabled>
-              Advisory + Simulation (Coming Soon)
-            </option>
-            <option value="conversational-execution" disabled>
-              Conversational Execution (Coming Soon)
-            </option>
-          </select>
+          <Select value={selectedMode} onValueChange={setSelectedMode}>
+            <SelectTrigger
+              aria-label="Risk co-pilot mode"
+              className="h-8 border-slate-700/70 bg-[#131722] px-2.5 text-[11px] text-slate-200 focus:ring-primary/40"
+            >
+              <SelectValue placeholder="Select mode" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              className="z-[110] border-slate-700/80 bg-[#131722] text-slate-200"
+            >
+              <SelectItem value="informational" className="text-[11px]">
+                Informational (Live)
+              </SelectItem>
+              <SelectItem value="advisory-simulation" className="text-[11px]">
+                Advisory + Simulation (Coming Soon)
+              </SelectItem>
+              <SelectItem value="conversational-execution" className="text-[11px]">
+                Conversational Execution (Coming Soon)
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {selectedMode !== "informational" && (
+            <p className="text-[10px] leading-snug text-amber-200/70">
+              UI preview only — co-pilot responses still use the live informational
+              path until this mode ships.
+            </p>
+          )}
         </div>
       </div>
 

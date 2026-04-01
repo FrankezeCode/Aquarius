@@ -304,48 +304,31 @@ export function AaveRiskMonitor() {
       (!isBufferVaultEnrollment || hasBufferVaultDemoDeposit)
   );
 
-  if (isLoading || !data) {
-    return (
-      <>
+  const creLoading = isLoading || !data;
+  const creError = Boolean(error);
+
+  return (
+    <>
+      {creLoading ? (
         <div className="flex items-center justify-center py-32">
-          <div className="text-center space-y-4">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+          <div className="space-y-4 text-center">
+            <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="text-sm text-muted-foreground">
               Connecting to CRE workflow…
             </p>
           </div>
         </div>
-        <FloatingRiskCopilot
-          chain={chain}
-          walletAddress={isWalletConnected ? walletAddress : undefined}
-        />
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
+      ) : creError ? (
         <div className="flex items-center justify-center py-32">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-destructive">
-              CRE pipeline unavailable
-            </p>
+          <div className="space-y-4 text-center">
+            <p className="text-sm text-destructive">CRE pipeline unavailable</p>
             <p className="text-xs text-muted-foreground">
               Ensure the API server is running on port 3001.
             </p>
           </div>
         </div>
-        <FloatingRiskCopilot
-          chain={chain}
-          walletAddress={isWalletConnected ? walletAddress : undefined}
-        />
-      </>
-    );
-  }
-
-  return (
-    <div className="space-y-12">
+      ) : (
+        <div className="space-y-12">
       <div className="space-y-2">
         {activeChain && (
           <div className="flex justify-center mt-0 mb-0">
@@ -393,16 +376,19 @@ export function AaveRiskMonitor() {
         <AdvancedRiskMetrics metrics={actionableMetrics} />
       )}
 
-      {/* Section 5 — Action Layer + Intelligence Layer (side by side) */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-4">
+      {/* Section 5 — Action Layer + Intelligence Layer (stack on mobile) */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0 space-y-4">
           <LiveRiskEventFeed events={mapEvents(data)} />
           <MetricInsightsTrigger
             isOpen={insightsOpen}
             onToggle={() => setInsightsOpen(!insightsOpen)}
           />
         </div>
-        <IntelligenceLayers data={mapIntelligenceLayers(data)} />
+        <IntelligenceLayers
+          className="min-w-0"
+          data={mapIntelligenceLayers(data)}
+        />
       </div>
 
       {/* Section 6 — Actionable Insights (expanded full-width) */}
@@ -495,8 +481,9 @@ export function AaveRiskMonitor() {
 
       {/* Section 9 — Developer Footer */}
       <DeveloperFooter />
+        </div>
+      )}
 
-      {/* Floating Risk Co-Pilot (persistent launcher + expandable panel) */}
       <FloatingRiskCopilot
         chain={chain}
         walletAddress={isWalletConnected ? walletAddress : undefined}
@@ -531,7 +518,7 @@ export function AaveRiskMonitor() {
           setHasBufferVaultDemoDeposit(true);
         }}
       />
-    </div>
+    </>
   );
 }
 

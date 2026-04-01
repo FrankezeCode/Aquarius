@@ -305,12 +305,15 @@ export function MetricInsightsTrigger({
     <button
       type="button"
       onClick={onToggle}
-      className={cn("flex w-full items-center justify-between text-left", className)}
+      className={cn(
+        "flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-3",
+        className,
+      )}
     >
       <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Actionable Insights
       </h3>
-      <span className="text-xs text-muted-foreground/60">
+      <span className="text-xs text-muted-foreground/60 sm:shrink-0">
         ▶ What Do These Metrics Mean?
       </span>
     </button>

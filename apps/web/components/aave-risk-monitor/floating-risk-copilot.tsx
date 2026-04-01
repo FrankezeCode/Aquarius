@@ -45,17 +45,28 @@ export function FloatingRiskCopilot({
       }
     };
 
-    const onClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (target && containerRef.current?.contains(target)) return;
+    /** Radix Select/Dropdown portals to `document.body`; native `<select>` menus are also outside this tree. */
+    function isOutsideCopilotButInsidePortalledOverlay(target: EventTarget | null) {
+      if (!target || !(target instanceof Element)) return false;
+      return Boolean(
+        target.closest("[data-radix-popper-content-wrapper]") ||
+          target.closest("[data-radix-select-viewport]") ||
+          target.closest('[role="listbox"]'),
+      );
+    }
+
+    const onPointerDownOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (target && containerRef.current?.contains(target as Node)) return;
+      if (isOutsideCopilotButInsidePortalledOverlay(target)) return;
       setIsOpen(false);
     };
 
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("pointerdown", onPointerDownOutside, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("pointerdown", onPointerDownOutside, true);
     };
   }, [isOpen]);
 
