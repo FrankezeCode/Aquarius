@@ -49,7 +49,7 @@ export function EnableAlertsCTA({
   const [confirmOpen, setConfirmOpen] = useState(false);
   return (
     <section
-      className={cn("py-6", className)}
+      className={cn("py-8 md:py-10", className)}
       aria-label="Enable Alerts"
     >
       <div className="mx-auto w-full max-w-6xl overflow-hidden border-t border-[#1a1a1a] bg-[#0a0a0a]">

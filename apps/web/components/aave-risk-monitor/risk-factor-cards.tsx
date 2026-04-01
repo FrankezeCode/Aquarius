@@ -30,12 +30,12 @@ const DIRECTION_COLORS = {
 
 export function RiskFactorCards({ factors, className }: RiskFactorCardsProps) {
   return (
-    <section className={cn("space-y-3", className)} aria-label="Risk Factors">
+    <section className={cn("space-y-5", className)} aria-label="Risk Factors">
       <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Why This Status
       </h3>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3">
         {factors.map((factor) => (
           <div
             key={factor.id}

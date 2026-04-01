@@ -82,7 +82,7 @@ function LatencyCard({ label, ms }: { label: string; ms: number }) {
 export function IntelligenceLayers({ data, className }: IntelligenceLayersProps) {
   return (
     <section className={cn("space-y-0", className)} aria-label="Intelligence Layer">
-      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">
+      <h3 className="mb-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Intelligence Layer
       </h3>
 

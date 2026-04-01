@@ -10,12 +10,12 @@ interface AdvancedRiskMetricsProps {
 
 export function AdvancedRiskMetrics({ metrics, className }: AdvancedRiskMetricsProps) {
   return (
-    <section className={cn("space-y-3", className)} aria-label="Advanced Protocol Metrics">
+    <section className={cn("space-y-5", className)} aria-label="Advanced Protocol Metrics">
       <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Protocol Risk Metrics
       </h3>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3">
         {metrics.map((metric) => (
           <ActionableMetricCard key={metric.id} metric={metric} />
         ))}

@@ -328,8 +328,8 @@ export function AaveRiskMonitor() {
           </div>
         </div>
       ) : (
-        <div className="space-y-12">
-      <div className="space-y-2">
+        <div className="flex flex-col gap-14 md:gap-16 lg:gap-[4.5rem]">
+      <div className="space-y-3">
         {activeChain && (
           <div className="flex justify-center mt-0 mb-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5">
@@ -377,8 +377,8 @@ export function AaveRiskMonitor() {
       )}
 
       {/* Section 5 — Action Layer + Intelligence Layer (stack on mobile) */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="min-w-0 space-y-4">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-8 lg:gap-10">
+        <div className="min-w-0 space-y-6">
           <LiveRiskEventFeed events={mapEvents(data)} />
           <MetricInsightsTrigger
             isOpen={insightsOpen}
@@ -399,7 +399,7 @@ export function AaveRiskMonitor() {
 
       {/* Section 7 — Position Risk (After Wallet Connect) */}
       {!isWalletConnected ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <ConnectWalletCTA
             onConnect={handleConnectWallet}
             isConnecting={isConnecting}
@@ -412,7 +412,7 @@ export function AaveRiskMonitor() {
         </div>
       ) : (
         <>
-          <div className="space-y-6">
+          <div className="space-y-8">
             {userRisk ? (
                 <UserPositionCard
                   score={userRisk.score}

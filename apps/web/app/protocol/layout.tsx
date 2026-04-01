@@ -11,7 +11,7 @@ export default function ProtocolLayout({
 }) {
   return (
     <ProtocolShell>
-      <div className="container mx-auto px-4 py-6 md:py-8">{children}</div>
+      <div className="container mx-auto px-4 py-8 md:py-10">{children}</div>
     </ProtocolShell>
   );
 }

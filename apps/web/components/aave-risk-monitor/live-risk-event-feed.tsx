@@ -74,7 +74,7 @@ export function LiveRiskEventFeed({
       className={cn("space-y-0", className)}
       aria-label="Action Layer"
     >
-      <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">
+      <h3 className="mb-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Action Layer
       </h3>
 

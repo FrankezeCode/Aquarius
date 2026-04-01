@@ -191,7 +191,7 @@ export function RiskProgressionBar({
 
   return (
     <section
-      className={cn("space-y-4", className)}
+      className={cn("space-y-5", className)}
       aria-label="Risk Progression"
     >
       <div className="flex items-center gap-3">

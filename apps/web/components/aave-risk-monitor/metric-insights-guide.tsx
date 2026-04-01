@@ -332,7 +332,7 @@ export function MetricInsightsPanel({
   if (!isOpen) return null;
 
   return (
-    <section className={cn("space-y-3", className)} aria-label="Metric Insights Guide">
+    <section className={cn("space-y-4", className)} aria-label="Metric Insights Guide">
       <div className="rounded-xl border border-border bg-card/50 p-4 space-y-2 max-h-[600px] overflow-y-auto">
         <div className="flex items-center justify-between pb-2 border-b border-border/30">
           <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">

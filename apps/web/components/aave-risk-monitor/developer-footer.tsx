@@ -15,7 +15,7 @@ export function DeveloperFooter({ className }: DeveloperFooterProps) {
   return (
     <footer
       className={cn(
-        "border-t border-border/50 pt-8 text-center",
+        "border-t border-border/50 pt-12 text-center md:pt-14",
         className
       )}
     >
