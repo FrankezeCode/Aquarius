@@ -5,7 +5,15 @@ Built with love ❤️ for users, developers, and automated systems.
 In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b>.
 
 <p align="center">
-  <strong><a href="https://youtu.be/b-kWwo4hqwk">▶ Walkthrough demo video</a></strong>
+  <a href="https://youtu.be/b-kWwo4hqwk">
+    <strong>▶ Walkthrough demo video</strong>
+    <br /><br />
+    <img
+      width="100%"
+      alt="Aquarius landing page — click to open the walkthrough on YouTube"
+      src="https://github.com/user-attachments/assets/25908e99-67f0-469c-a8ed-3f4e76837bde"
+    />
+  </a>
 </p>
 
 <p align="center">
