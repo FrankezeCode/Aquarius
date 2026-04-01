@@ -5,11 +5,11 @@ Built with love ❤️ for users, developers, and automated systems.
 In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b>.
 
 <p align="center">
-  <strong><a href="https://youtu.be/YOUR_VIDEO_ID">▶ Walkthrough demo video</a></strong>
+  <strong><a href="https://youtu.be/b-kWwo4hqwk">▶ Walkthrough demo video</a></strong>
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/YOUR_VIDEO_ID">
+  <a href="https://youtu.be/b-kWwo4hqwk">
     <img src="https://img.shields.io/badge/Walkthrough-Watch_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Walkthrough demo video" />
   </a>
   &nbsp;&nbsp;
