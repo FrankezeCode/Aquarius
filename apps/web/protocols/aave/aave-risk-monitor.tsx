@@ -55,6 +55,12 @@ function resolveTenderlyRpcUrl(chainId: string): string | undefined {
       process.env.NEXT_PUBLIC_TENDERLY_RPC_URL
     );
   }
+  if (chainId === "arbitrum") {
+    return (
+      process.env.NEXT_PUBLIC_TENDERLY_RPC_URL_ARBITRUM ??
+      process.env.NEXT_PUBLIC_TENDERLY_RPC_URL
+    );
+  }
   return process.env.NEXT_PUBLIC_TENDERLY_RPC_URL;
 }
 

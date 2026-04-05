@@ -8,6 +8,7 @@
 export const AAVE_SUPPORTED_CHAINS = [
   "ethereum",
   "polygon",
+  "arbitrum",
 ] as const;
 
 export type AaveSupportedChain = (typeof AAVE_SUPPORTED_CHAINS)[number];
