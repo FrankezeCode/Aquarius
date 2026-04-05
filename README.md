@@ -5,8 +5,8 @@ Built with love ❤️ for users, developers, and automated systems.
 In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></b>.
 
 <p align="center">
-  <a href="https://youtu.be/b-kWwo4hqwk">
-    <strong>▶ Walkthrough demo video</strong>
+  <a href="https://youtu.be/Z0YKaZFClW4">
+    <strong>▶ INTRO VIDEO ABOUT AQUARIUS </strong>
     <br /><br />
     <img
       width="100%"
