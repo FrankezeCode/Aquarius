@@ -42,6 +42,8 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
   - [How It Works](#how-it-works)
   - [Quick System Flow](#quick-system-flow)
   - [Architecture Diagram](#architecture-diagram)
+    - [Full stack API and domain (current)](#full-stack-api-and-domain-current)
+    - [Vault, staking, and yield (roadmap)](#vault-staking-and-yield-roadmap)
   - [Contracts and Architecture](#contracts-and-architecture)
     - [Core Contracts](#core-contracts)
     - [API and Orchestration Layer](#api-and-orchestration-layer)
@@ -49,6 +51,11 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [Execution Layer](#execution-layer)
     - [SDK and Bot Surface](#sdk-and-bot-surface)
   - [System Actors](#system-actors)
+  - [Zero Gravity (0G) and ZG pipeline](#zero-gravity-0g-and-zg-pipeline)
+    - [Role and boundaries](#role-and-boundaries)
+    - [ZG pipeline](#zg-pipeline)
+    - [Vault gateway](#vault-gateway)
+    - [Contracts, ports, and environment](#contracts-ports-and-environment)
   - [Chainlink Integrations](#chainlink-integrations)
     - [Chainlink CRE](#chainlink-cre)
     - [Chainlink Confidential Compute (CCC) Oriented Execution](#chainlink-confidential-compute-ccc-oriented-execution)
@@ -204,6 +211,114 @@ sequenceDiagram
     API-->>Web: Updated HF, stage, and telemetry
 ```
 
+### Full stack API and domain (current)
+
+Public HTTP routes live under [`apps/api/src/app.ts`](apps/api/src/app.ts): `/api/v1` (rate-limited public API), `/api/internal` (webhooks), `/api/cre` (CRE workflow surface). The diagram below highlights **ZG** (0G-aligned pipeline) and **vault-gateway** (advisory manifest and routing) alongside existing protocol and risk surfaces.
+
+```mermaid
+flowchart TB
+  subgraph clients [Clients]
+    Web[Nextjs_apps_web]
+    Agents[External_agents]
+    Wallet[User_wallets]
+  end
+
+  subgraph api [apps_api_Fastify]
+    V1[V1_public_API]
+    Internal[internal_ingestion]
+    CreHttp[cre_HTTP]
+    V1 --> Proto["/protocol"]
+    V1 --> Risk["/aave-risk"]
+    V1 --> Copilot["/copilot"]
+    V1 --> Enroll["/agent-enrollment"]
+    V1 --> Zg["POST_/zg/pipeline"]
+    V1 --> Vg["/vault-gateway"]
+    Internal --> CreWebhook["cre-webhook"]
+  end
+
+  subgraph domain [Domain_and_services]
+    RiskIntel[risk_intelligence]
+    VaultPorts[vault_ports_Staking_Mitigation]
+    CreAdapter[cre-adapter_confidential_HTTP]
+    ZgInt[integrations_zg]
+    VgSvc[vault-gateway_manifest_routing]
+  end
+
+  subgraph workflows [CRE_off_repo_or_scripts]
+    Don[CRE_DON_workflows_WASM]
+  end
+
+  subgraph chain [On_chain]
+    BV[BufferVault]
+    PCV[AquariusPerChainVault]
+    CCIP[CCIPCoordinator]
+    Mit[MitigationExecutor]
+  end
+
+  subgraph data [Data_and_RPC]
+    Rpc[EVM_RPC_indexers]
+  end
+
+  Web --> V1
+  Agents --> V1
+  Wallet --> chain
+  CreWebhook --> domain
+  CreHttp --> domain
+  Proto --> RiskIntel
+  Risk --> RiskIntel
+  Zg --> ZgInt
+  Vg --> VgSvc
+  domain --> Rpc
+  CreAdapter --> Don
+  RiskIntel --> VaultPorts
+  api --> Rpc
+  BV --> Rpc
+  PCV --> Rpc
+```
+
+### Vault, staking, and yield (roadmap)
+
+`AquariusPerChainVault` ([`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol)) currently holds **ERC-20 shares only**. **Native staking, delegation, and LST routing** are intended to plug in via **future strategy adapters** (allowlisted contracts or modules), not via the API server holding keys.
+
+```mermaid
+flowchart LR
+  subgraph user [User]
+    W[Wallet]
+  end
+
+  subgraph vault [On_chain_vault]
+    PCV[AquariusPerChainVault]
+  end
+
+  subgraph staking [Staking_and_yield_roadmap]
+    SA[Strategy_adapters_future]
+    LST[Liquid_staking_Lido_etc]
+    AaveLend[Aave_supply]
+    OG0G[0G_IValidatorContract_delegate]
+    Poly[Polygon_validator_delegation]
+  end
+
+  subgraph networks [Networks]
+    Eth[Ethereum]
+    Pol[Polygon]
+    Arb[Arbitrum]
+    OG[0G_Chain]
+  end
+
+  W --> PCV
+  PCV --> SA
+  SA --> LST
+  SA --> AaveLend
+  SA --> OG0G
+  SA --> Poly
+  LST --> Eth
+  AaveLend --> Eth
+  AaveLend --> Pol
+  AaveLend --> Arb
+  OG0G --> OG
+  Poly --> Pol
+```
+
 ## Contracts and Architecture
 
 ### Core Contracts
@@ -213,12 +328,13 @@ sequenceDiagram
 - [`contracts/src/BufferVault.sol`](contracts/src/BufferVault.sol)
 - [`contracts/src/AquaAgent.sol`](contracts/src/AquaAgent.sol)
 - [`contracts/src/CCIPCoordinator.sol`](contracts/src/CCIPCoordinator.sol)
+- [`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol)
 
 ### API and Orchestration Layer
 
 - [`apps/api/src/app.ts`](apps/api/src/app.ts)
 - [`apps/api/src/server.ts`](apps/api/src/server.ts)
-- [`apps/api/src/routes/v1/index.ts`](apps/api/src/routes/v1/index.ts)
+- [`apps/api/src/routes/v1/index.ts`](apps/api/src/routes/v1/index.ts) (includes [`zg`](apps/api/src/routes/v1/zg/) and [`vault-gateway`](apps/api/src/routes/v1/vault-gateway/))
 - [`apps/api/src/routes/cre/index.ts`](apps/api/src/routes/cre/index.ts)
 - [`apps/api/src/routes/cre/demo.ts`](apps/api/src/routes/cre/demo.ts)
 - [`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts)
@@ -250,6 +366,37 @@ sequenceDiagram
 - **Users / Treasuries:** monitor and protect positions via UI and policy flows.
 - **Bots / Integrators:** consume Aquarius API and SELVA SDK methods.
 - **Operators:** validate posture, execution, and system safety via telemetry/validation layers.
+
+## Zero Gravity (0G) and ZG pipeline
+
+### Role and boundaries
+
+**0G (Zero Gravity)** is an external decentralized AI and chain ecosystem ([0G docs](https://docs.0g.ai/)). In this repo, **ZG** names the **server-side integration prefix** (`ZG_*` env vars) for an **API-led** pipeline that complements Chainlink CRE rather than replacing it. Aquarius does not embed the full 0G Storage SDK in the API; it exposes a narrow HTTP surface (ZG pipeline + vault gateway) that can align with 0G-aligned workflows while keeping CRE as the primary orchestration path for mitigation.
+
+### ZG pipeline
+
+Canonical SHA-256 commitment over advisory payloads; optional OpenAI-compatible inference; optional `ZG_STORAGE_BRIDGE_URL` POST for storage-bridge integration.
+
+- Code: [`apps/api/src/integrations/zg/`](apps/api/src/integrations/zg/), routes [`apps/api/src/routes/v1/zg/`](apps/api/src/routes/v1/zg/)
+- **Route:** `POST /api/v1/zg/pipeline`
+
+### Vault gateway
+
+Read-only manifest plus per-chain/asset **advisory** routing (includes logical `og_chain`). Consumers treat output as guidance, not on-chain truth.
+
+- Services: [`apps/api/src/services/vault-gateway/`](apps/api/src/services/vault-gateway/)
+- Routes: [`apps/api/src/routes/v1/vault-gateway/`](apps/api/src/routes/v1/vault-gateway/) — e.g. `GET /api/v1/vault-gateway/manifest`, `GET /api/v1/vault-gateway/routing`
+
+### Contracts, ports, and environment
+
+| Piece | Role | Code |
+|--------|------|------|
+| **Per-chain vault (Solidity)** | Share accounting per deployment; **no** 0G delegation inside the contract yet | [`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol), deploy notes [`contracts/src/vaults/README.md`](contracts/src/vaults/README.md) |
+| **Staking port (TypeScript)** | Hexagonal **port** for future yield/staking infrastructure (strategy adapters are roadmap; not wired in the vault contract today) | [`apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts`](apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts) (`StakingPort`) |
+
+**Environment (API):** [`apps/api/src/integrations/zg/config.ts`](apps/api/src/integrations/zg/config.ts) — e.g. `ZG_PIPELINE_MODE`, `ZG_INFERENCE_BASE_URL`, `ZG_STORAGE_BRIDGE_URL`.
+
+**Web docs:** [Zero Gravity (0G)](https://aquarius-web.vercel.app/docs/zero-gravity) (diagrams and API cross-links).
 
 ## Chainlink Integrations
 

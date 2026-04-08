@@ -57,6 +57,118 @@ graph TB
     execution --> onchain
 ```
 
+## Runtime API surfaces and Zero Gravity (0G)
+
+Aquarius exposes additional **versioned** routes under `/api/v1` for **ZG** (0G-aligned advisory pipeline) and **vault-gateway** (manifest + advisory routing). These are **server-side** integrations: they do not replace Chainlink CRE or custody user keys.
+
+See **[Zero Gravity (0G)](/docs/zero-gravity)** for diagrams, environment variables, and code paths.
+
+### Full stack API and domain (current)
+
+```mermaid
+flowchart TB
+  subgraph clients [Clients]
+    Web[Nextjs_apps_web]
+    Agents[External_agents]
+    Wallet[User_wallets]
+  end
+
+  subgraph api [apps_api_Fastify]
+    V1[V1_public_API]
+    Internal[internal_ingestion]
+    CreHttp[cre_HTTP]
+    V1 --> Proto["/protocol"]
+    V1 --> Risk["/aave-risk"]
+    V1 --> Copilot["/copilot"]
+    V1 --> Enroll["/agent-enrollment"]
+    V1 --> Zg["POST_/zg/pipeline"]
+    V1 --> Vg["/vault-gateway"]
+    Internal --> CreWebhook["cre-webhook"]
+  end
+
+  subgraph domain [Domain_and_services]
+    RiskIntel[risk_intelligence]
+    VaultPorts[vault_ports_Staking_Mitigation]
+    CreAdapter[cre-adapter_confidential_HTTP]
+    ZgInt[integrations_zg]
+    VgSvc[vault-gateway_manifest_routing]
+  end
+
+  subgraph workflows [CRE_off_repo_or_scripts]
+    Don[CRE_DON_workflows_WASM]
+  end
+
+  subgraph chain [On_chain]
+    BV[BufferVault]
+    PCV[AquariusPerChainVault]
+    CCIP[CCIPCoordinator]
+    Mit[MitigationExecutor]
+  end
+
+  subgraph data [Data_and_RPC]
+    Rpc[EVM_RPC_indexers]
+  end
+
+  Web --> V1
+  Agents --> V1
+  Wallet --> chain
+  CreWebhook --> domain
+  CreHttp --> domain
+  Proto --> RiskIntel
+  Risk --> RiskIntel
+  Zg --> ZgInt
+  Vg --> VgSvc
+  domain --> Rpc
+  CreAdapter --> Don
+  RiskIntel --> VaultPorts
+  api --> Rpc
+  BV --> Rpc
+  PCV --> Rpc
+```
+
+### Vault, staking, and yield (roadmap)
+
+`AquariusPerChainVault` holds **ERC-20 shares** only today. Staking and delegation plug in via **future strategy adapters**.
+
+```mermaid
+flowchart LR
+  subgraph user [User]
+    W[Wallet]
+  end
+
+  subgraph vault [On_chain_vault]
+    PCV[AquariusPerChainVault]
+  end
+
+  subgraph staking [Staking_and_yield_roadmap]
+    SA[Strategy_adapters_future]
+    LST[Liquid_staking_Lido_etc]
+    AaveLend[Aave_supply]
+    OG0G[0G_IValidatorContract_delegate]
+    Poly[Polygon_validator_delegation]
+  end
+
+  subgraph networks [Networks]
+    Eth[Ethereum]
+    Pol[Polygon]
+    Arb[Arbitrum]
+    OG[0G_Chain]
+  end
+
+  W --> PCV
+  PCV --> SA
+  SA --> LST
+  SA --> AaveLend
+  SA --> OG0G
+  SA --> Poly
+  LST --> Eth
+  AaveLend --> Eth
+  AaveLend --> Pol
+  AaveLend --> Arb
+  OG0G --> OG
+  Poly --> Pol
+```
+
 ## Directory Structure
 
 The codebase is organized as a monorepo with clear separation of concerns:

@@ -664,3 +664,43 @@ Notes:
 ```
 
 </ApiEndpoint>
+
+## ZG pipeline and vault gateway
+
+Advisory server endpoints; Aquarius does not custody user private keys on these routes. Semantics: [Zero Gravity (0G)](/docs/zero-gravity).
+
+<ApiEndpoint method="POST" path="/v1/zg/pipeline" description="ZG-aligned intelligence pipeline: canonical SHA-256 commitment, optional OpenAI-compatible inference, optional storage bridge POST.">
+
+**Request body (JSON)**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `protocol` | string | yes | Protocol id (e.g. `aave`) |
+| `chain` | string | yes | Chain id (e.g. `ethereum`) |
+| `contextRef` | string | no | Correlation id |
+| `riskSummary` | object | no | Redacted aggregates only; no secrets |
+
+**Responses:** `200` success; `400` invalid body; `503` when `ZG_PIPELINE_MODE=off`; `502` upstream inference failure.
+
+Configure via `ZG_PIPELINE_MODE`, `ZG_INFERENCE_BASE_URL`, `ZG_INFERENCE_API_KEY`, `ZG_STORAGE_BRIDGE_URL` (see `apps/api/src/integrations/zg/config.ts`).
+
+</ApiEndpoint>
+
+<ApiEndpoint method="GET" path="/v1/vault-gateway/manifest" description="Architecture manifest: layers, trust boundaries, registered chains (read-only JSON).">
+
+No query parameters.
+
+</ApiEndpoint>
+
+<ApiEndpoint method="GET" path="/v1/vault-gateway/routing" description="Advisory buffer vs yield routing by chain and asset.">
+
+**Query parameters**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `chain` | string | yes | e.g. `ethereum`, `arbitrum`, `0g` (aliases normalize to `og_chain`) |
+| `asset` | string | yes | e.g. `USDC`, `WETH` |
+
+**Responses:** `200` JSON; `400` invalid or unsupported chain.
+
+</ApiEndpoint>

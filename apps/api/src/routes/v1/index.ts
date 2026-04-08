@@ -15,6 +15,8 @@ import { registerLidoRoutes } from "./lido/index.js";
 import { registerAaveRiskApiRoutes } from "./aave-risk/index.js";
 import { registerCopilotRoutes } from "./copilot/index.js";
 import { registerAgentEnrollmentRoutes } from "./agent-enrollment/index.js";
+import { registerZgRoutes } from "./zg/index.js";
+import { registerVaultGatewayPlugin } from "./vault-gateway/index.js";
 
 export interface V1RouteRegisterOpts extends FastifyPluginOptions {
   copilotRateLimitMax?: number;
@@ -39,4 +41,10 @@ export async function registerV1Routes(
 
   // ── API-as-a-Product: Agent enrollment (phase A, in-memory) ─────────
   await app.register(registerAgentEnrollmentRoutes, { prefix: "/agent-enrollment" });
+
+  // ── ZG (0G-aligned) intelligence pipeline (advisory; separate from CRE) ──
+  await app.register(registerZgRoutes, { prefix: "/zg" });
+
+  // ── Cross-chain vault gateway (manifest + advisory routing; no custody) ──
+  await app.register(registerVaultGatewayPlugin, { prefix: "/vault-gateway" });
 }

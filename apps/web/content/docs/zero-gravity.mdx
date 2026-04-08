@@ -1,0 +1,161 @@
+---
+title: Zero Gravity (0G)
+description: How Aquarius integrates 0G-aligned (ZG) APIs, vault-gateway routing, and on-chain per-chain vaults — without conflating them with Chainlink CRE.
+section: Architecture
+---
+
+## What this page covers
+
+**0G (Zero Gravity)** is an external decentralized AI and L1 ecosystem. Aquarius uses a **ZG-prefixed server integration** for an optional **intelligence pipeline** and exposes **advisory** cross-chain vault routing that includes a logical **0G chain** entry. This is **complementary** to [Chainlink CRE](/docs/architecture) and **does not** custody user private keys.
+
+For the full stack diagram, see [System Overview](/docs/architecture).
+
+## Full stack API and domain (current)
+
+```mermaid
+flowchart TB
+  subgraph clients [Clients]
+    Web[Nextjs_apps_web]
+    Agents[External_agents]
+    Wallet[User_wallets]
+  end
+
+  subgraph api [apps_api_Fastify]
+    V1[V1_public_API]
+    Internal[internal_ingestion]
+    CreHttp[cre_HTTP]
+    V1 --> Proto["/protocol"]
+    V1 --> Risk["/aave-risk"]
+    V1 --> Copilot["/copilot"]
+    V1 --> Enroll["/agent-enrollment"]
+    V1 --> Zg["POST_/zg/pipeline"]
+    V1 --> Vg["/vault-gateway"]
+    Internal --> CreWebhook["cre-webhook"]
+  end
+
+  subgraph domain [Domain_and_services]
+    RiskIntel[risk_intelligence]
+    VaultPorts[vault_ports_Staking_Mitigation]
+    CreAdapter[cre-adapter_confidential_HTTP]
+    ZgInt[integrations_zg]
+    VgSvc[vault-gateway_manifest_routing]
+  end
+
+  subgraph workflows [CRE_off_repo_or_scripts]
+    Don[CRE_DON_workflows_WASM]
+  end
+
+  subgraph chain [On_chain]
+    BV[BufferVault]
+    PCV[AquariusPerChainVault]
+    CCIP[CCIPCoordinator]
+    Mit[MitigationExecutor]
+  end
+
+  subgraph data [Data_and_RPC]
+    Rpc[EVM_RPC_indexers]
+  end
+
+  Web --> V1
+  Agents --> V1
+  Wallet --> chain
+  CreWebhook --> domain
+  CreHttp --> domain
+  Proto --> RiskIntel
+  Risk --> RiskIntel
+  Zg --> ZgInt
+  Vg --> VgSvc
+  domain --> Rpc
+  CreAdapter --> Don
+  RiskIntel --> VaultPorts
+  api --> Rpc
+  BV --> Rpc
+  PCV --> Rpc
+```
+
+## ZG pipeline (API)
+
+The **ZG** prefix (`ZG_*` environment variables) names the **Zero Gravity–aligned** server pipeline in the repo at `apps/api/src/integrations/zg/`.
+
+| Capability | Description |
+|-------------|-------------|
+| **Commitment** | SHA-256 over canonical JSON (`0x…` hex), stable for auditing |
+| **Modes** | `mock` (no outbound calls), `live` (optional inference), `off` (503) |
+| **Optional inference** | OpenAI-compatible `POST …/v1/chat/completions` when `ZG_INFERENCE_BASE_URL` is set |
+| **Optional storage bridge** | `ZG_STORAGE_BRIDGE_URL` — POST commitment + payload to your uploader (e.g. future 0G Storage worker) |
+
+**Route:** `POST /api/v1/zg/pipeline` — see [API Reference](/docs/api#zg-pipeline-and-vault-gateway).
+
+**Config:** `apps/api/src/integrations/zg/config.ts`.
+
+## Vault gateway (advisory)
+
+`apps/api/src/services/vault-gateway/` exposes:
+
+- `GET /api/v1/vault-gateway/manifest` — architecture layers and registered chains
+- `GET /api/v1/vault-gateway/routing?chain=&asset=` — buffer vs yield **sleeves** and strategy **kinds** (advisory only)
+
+Chains include logical **`og_chain`** (aliases `0g`, `og`, `galileo` in query). This **does not** move funds or perform delegation.
+
+## On-chain: per-chain vault (not staking yet)
+
+`contracts/src/vaults/AquariusPerChainVault.sol` — ERC-20 share vault; deploy **per chain** with `deploymentChainId` and `chainKey`. **Staking / 0G delegation** is **not** implemented inside this contract; it is a **shell** for future **strategy adapters**.
+
+Deploy notes: `contracts/src/vaults/README.md`.
+
+## Vault, staking, and yield (roadmap)
+
+```mermaid
+flowchart LR
+  subgraph user [User]
+    W[Wallet]
+  end
+
+  subgraph vault [On_chain_vault]
+    PCV[AquariusPerChainVault]
+  end
+
+  subgraph staking [Staking_and_yield_roadmap]
+    SA[Strategy_adapters_future]
+    LST[Liquid_staking_Lido_etc]
+    AaveLend[Aave_supply]
+    OG0G[0G_IValidatorContract_delegate]
+    Poly[Polygon_validator_delegation]
+  end
+
+  subgraph networks [Networks]
+    Eth[Ethereum]
+    Pol[Polygon]
+    Arb[Arbitrum]
+    OG[0G_Chain]
+  end
+
+  W --> PCV
+  PCV --> SA
+  SA --> LST
+  SA --> AaveLend
+  SA --> OG0G
+  SA --> Poly
+  LST --> Eth
+  AaveLend --> Eth
+  AaveLend --> Pol
+  AaveLend --> Arb
+  OG0G --> OG
+  Poly --> Pol
+```
+
+## Boundaries vs Chainlink CRE
+
+| Layer | CRE | ZG pipeline |
+|--------|-----|-------------|
+| **Role** | Orchestration, DON workflows, confidential dispatch | Optional AI-scale commitment + inference + bridge hook |
+| **Trust** | Consensus-oriented workflow semantics | Server-side advisory; validate all inputs |
+
+## Out of scope (today)
+
+- Full **@0gfoundation/0g-ts-sdk** storage upload in the API process (can be added later with funded keys and audits)
+- **Native 0G delegation** from `AquariusPerChainVault` without a separate audited strategy module
+
+## External reference
+
+- [0G documentation](https://docs.0g.ai/)

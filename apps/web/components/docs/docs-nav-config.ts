@@ -13,6 +13,7 @@ import {
   Lock,
   Map,
   Target,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,11 @@ export const docsNavConfig: DocsNavGroup[] = [
         title: "System Overview",
         href: "/docs/architecture",
         icon: Layers,
+      },
+      {
+        title: "Zero Gravity (0G)",
+        href: "/docs/zero-gravity",
+        icon: Globe,
       },
       {
         title: "Risk Intelligence Engine",

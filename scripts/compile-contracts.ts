@@ -69,6 +69,7 @@ const TARGET_CONTRACTS = [
   "BufferVault",
   "AquaAgent",
   "CCIPCoordinator",
+  "AquariusPerChainVault",
 ];
 
 const artifacts: Record<string, { abi: any[]; bytecode: string }> = {};
@@ -105,3 +106,16 @@ export type ContractName = keyof typeof ContractArtifacts;
 
 writeFileSync(resolve(OUT_DIR, "artifacts.ts"), tsContent, "utf-8");
 console.log(`\nArtifacts written to contracts/compiled/artifacts.ts`);
+
+const API_ARTIFACTS = resolve(
+  __dirname,
+  "..",
+  "apps",
+  "api",
+  "src",
+  "infrastructure",
+  "contracts",
+  "artifacts.ts"
+);
+writeFileSync(API_ARTIFACTS, tsContent, "utf-8");
+console.log(`Artifacts written to apps/api/src/infrastructure/contracts/artifacts.ts`);
