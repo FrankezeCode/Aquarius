@@ -52,10 +52,13 @@ In honor of <b><a href="https://en.wikipedia.org/wiki/Miki_Endo">Miki Endo</a></
     - [SDK and Bot Surface](#sdk-and-bot-surface)
   - [System Actors](#system-actors)
   - [Zero Gravity (0G) and ZG pipeline](#zero-gravity-0g-and-zg-pipeline)
-    - [Role and boundaries](#role-and-boundaries)
-    - [ZG pipeline](#zg-pipeline)
-    - [Vault gateway](#vault-gateway)
-    - [Contracts, ports, and environment](#contracts-ports-and-environment)
+    - [Chain and routing](#chain-and-routing)
+    - [Data and availability](#data-and-availability)
+    - [AI and inference](#ai-and-inference)
+    - [Verifiability and audit trail](#verifiability-and-audit-trail)
+    - [On-chain vault](#on-chain-vault)
+    - [Boundary with Chainlink CRE](#boundary-with-chainlink-cre)
+    - [Configuration and references](#configuration-and-references)
   - [Chainlink Integrations](#chainlink-integrations)
     - [Chainlink CRE](#chainlink-cre)
     - [Chainlink Confidential Compute (CCC) Oriented Execution](#chainlink-confidential-compute-ccc-oriented-execution)
@@ -369,34 +372,52 @@ flowchart LR
 
 ## Zero Gravity (0G) and ZG pipeline
 
-### Role and boundaries
+**0G (Zero Gravity)** is a decentralized AI and chain ecosystem ([0G docs](https://docs.0g.ai/))—chain, scalable data availability for AI-scale payloads, and decentralized compute/serving. Aquarius integrates along that story through a **ZG** server surface: `ZG_*` configuration, a **ZG pipeline** HTTP route for commitment- and inference-aware flows, and a **vault gateway** that exposes advisory routing (including a logical **0G chain** entry). The sections below follow that infrastructure narrative and separate **what ships in this repo** from **what is planned next**.
 
-**0G (Zero Gravity)** is an external decentralized AI and chain ecosystem ([0G docs](https://docs.0g.ai/)). In this repo, **ZG** names the **server-side integration prefix** (`ZG_*` env vars) for an **API-led** pipeline that complements Chainlink CRE rather than replacing it. Aquarius does not embed the full 0G Storage SDK in the API; it exposes a narrow HTTP surface (ZG pipeline + vault gateway) that can align with 0G-aligned workflows while keeping CRE as the primary orchestration path for mitigation.
+### Chain and routing
 
-### ZG pipeline
+Maps the **0G chain / multi-chain** angle to Aquarius: where 0G appears in routing and contracts.
 
-Canonical SHA-256 commitment over advisory payloads; optional OpenAI-compatible inference; optional `ZG_STORAGE_BRIDGE_URL` POST for storage-bridge integration.
+- **In this repo:** Read-only **vault gateway** manifest and per-chain/asset **advisory** routing; responses include a logical **`og_chain`** (aliases such as `0g`, `og`, `galileo` in query params). Services [`apps/api/src/services/vault-gateway/`](apps/api/src/services/vault-gateway/), routes [`apps/api/src/routes/v1/vault-gateway/`](apps/api/src/routes/v1/vault-gateway/) — `GET /api/v1/vault-gateway/manifest`, `GET /api/v1/vault-gateway/routing`. Output is **guidance for clients**, not on-chain execution.
+- **Roadmap:** On-chain **strategy adapters** and optional **delegation / yield** paths that touch 0G-style networks—see the vault roadmap diagram under [Architecture Diagram](#architecture-diagram); not live in `AquariusPerChainVault` yet.
 
-- Code: [`apps/api/src/integrations/zg/`](apps/api/src/integrations/zg/), routes [`apps/api/src/routes/v1/zg/`](apps/api/src/routes/v1/zg/)
-- **Route:** `POST /api/v1/zg/pipeline`
+### Data and availability
 
-### Vault gateway
+Aligns with **0G Storage / DA**—large, attestable data off the hot settlement path.
 
-Read-only manifest plus per-chain/asset **advisory** routing (includes logical `og_chain`). Consumers treat output as guidance, not on-chain truth.
+- **In this repo:** Optional **`ZG_STORAGE_BRIDGE_URL`**: the ZG pipeline can **POST** commitment metadata and payload to **your** bridge or uploader worker (e.g. a future 0G Storage–aligned worker). This is a **controlled hook**, not an in-process 0G Storage SDK.
+- **Roadmap:** Deeper integration with **0G Storage / DA** products if you standardize on their stack for datasets, artifacts, or retrieval behind that bridge.
 
-- Services: [`apps/api/src/services/vault-gateway/`](apps/api/src/services/vault-gateway/)
-- Routes: [`apps/api/src/routes/v1/vault-gateway/`](apps/api/src/routes/v1/vault-gateway/) — e.g. `GET /api/v1/vault-gateway/manifest`, `GET /api/v1/vault-gateway/routing`
+### AI and inference
 
-### Contracts, ports, and environment
+Aligns with **0G compute / serving**—model and inference scaled as infrastructure.
 
-| Piece | Role | Code |
-|--------|------|------|
-| **Per-chain vault (Solidity)** | Share accounting per deployment; **no** 0G delegation inside the contract yet | [`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol), deploy notes [`contracts/src/vaults/README.md`](contracts/src/vaults/README.md) |
-| **Staking port (TypeScript)** | Hexagonal **port** for future yield/staking infrastructure (strategy adapters are roadmap; not wired in the vault contract today) | [`apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts`](apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts) (`StakingPort`) |
+- **In this repo:** Optional **OpenAI-compatible** inference when **`ZG_INFERENCE_BASE_URL`** is set; requests run inside the ZG pipeline modes (`mock` / `live` / `off` in [`apps/api/src/integrations/zg/config.ts`](apps/api/src/integrations/zg/config.ts)). Implementation: [`apps/api/src/integrations/zg/`](apps/api/src/integrations/zg/), [`apps/api/src/routes/v1/zg/`](apps/api/src/routes/v1/zg/) — **`POST /api/v1/zg/pipeline`**.
+- **Roadmap:** First-class routing to **0G Compute / serving** APIs if you replace or augment the generic HTTP inference endpoint.
 
-**Environment (API):** [`apps/api/src/integrations/zg/config.ts`](apps/api/src/integrations/zg/config.ts) — e.g. `ZG_PIPELINE_MODE`, `ZG_INFERENCE_BASE_URL`, `ZG_STORAGE_BRIDGE_URL`.
+### Verifiability and audit trail
 
-**Web docs:** [Zero Gravity (0G)](https://aquarius-web.vercel.app/docs/zero-gravity) (diagrams and API cross-links).
+Aligns with **verifiable intelligence**—signals and outputs that can be traced without blind trust.
+
+- **In this repo:** **SHA-256 commitment** over **canonical JSON** for pipeline inputs/outputs (`integrations/zg/commitment.ts`, `pipeline.ts`), giving a stable **hex fingerprint** for auditing and replay alignment.
+- **Roadmap:** Richer **attestation**, **dispute-style verification**, or binding to 0G verification flows if you add them explicitly.
+
+### On-chain vault
+
+Aquarius’s **EVM** shell for per-chain vault logic alongside the advisory layer above.
+
+- **In this repo:** [`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol) — ERC-20 share accounting per deployment; deploy notes [`contracts/src/vaults/README.md`](contracts/src/vaults/README.md). Hexagonal **`StakingPort`** in [`apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts`](apps/api/src/protocols/aave/vaults/application/ports/vault.port.ts) for future yield/staking wiring.
+- **Roadmap:** Allowlisted **strategy modules** (LST, lending sleeves, **0G delegation**-style strategies) as designed in product—not implied as implemented in-contract today.
+
+### Boundary with Chainlink CRE
+
+- **Division of responsibility:** **Chainlink CRE** remains the **primary orchestration path for mitigation** (workflows, confidential HTTP, execution routing). The **ZG pipeline** and **vault gateway** **complement** CRE: they record and route **0G-aligned** intelligence and advisory vault paths without replacing CRE’s role in escalation and execution.
+- **Where to look:** CRE — [`packages/domain/cre/run-cre-workflow.ts`](packages/domain/cre/run-cre-workflow.ts), [`apps/api/src/routes/cre/`](apps/api/src/routes/cre/); ZG — routes above.
+
+### Configuration and references
+
+- **Environment (API):** [`apps/api/src/integrations/zg/config.ts`](apps/api/src/integrations/zg/config.ts) — e.g. `ZG_PIPELINE_MODE`, `ZG_INFERENCE_BASE_URL`, `ZG_STORAGE_BRIDGE_URL`.
+- **Web docs:** [Zero Gravity (0G)](https://aquarius-web.vercel.app/docs/zero-gravity) (diagrams, API cross-links).
 
 ## Chainlink Integrations
 
