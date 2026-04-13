@@ -1,0 +1,8 @@
+# Aquarius DeFi Lab — bounded-context hints (optional code review routing).
+# Pair with enforced checks: apps/api/scripts/check-domain-boundaries.mjs
+# and apps/web/scripts/check-kamino-solana-adapter.mjs
+#
+# Uncomment and replace with real GitHub usernames or @org/teams when ready:
+# apps/api/src/protocols/kamino-solana/ @your-org/kamino
+# apps/api/src/protocols/aave/ @your-org/aave
+# apps/web/adapters/kamino-solana/ @your-org/kamino

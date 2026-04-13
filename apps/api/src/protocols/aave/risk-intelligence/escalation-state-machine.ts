@@ -27,6 +27,7 @@ import {
   type AccumulatorConfig,
   DEFAULT_ACCUMULATOR_CONFIG,
 } from "./risk-accumulator.js";
+import type { CreEscalationStage } from "@aquarius/types";
 import {
   AccumulatorRingBuffer,
   EscalationTimeline,
@@ -37,7 +38,8 @@ import {
 
 export type { StageStability, EscalationTimelineEvent } from "./escalation-telemetry.js";
 
-export type Stage = "info" | "confirm" | "invalidate";
+/** @deprecated Prefer importing {@link CreEscalationStage} from `@aquarius/types` in cross-domain code. */
+export type Stage = CreEscalationStage;
 
 export type ActionRequired = "none" | "protect" | "escalate";
 

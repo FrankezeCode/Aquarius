@@ -112,6 +112,8 @@ Aquarius is an API-first, real-time DeFi risk intelligence system. It is designe
 
 Instead of waiting for liquidation conditions, Aquarius continuously evaluates protocol and user posture, classifies escalation stage, and dispatches mitigation pathways through a deterministic workflow.
 
+**Domain boundaries:** [ADR 0001 — Domains and boundaries](docs/adr/0001-domains-and-boundaries.md) (canonical `AquariusDomainId`, CRE vs intelligence, shared kernel). See also [docs/architecture.md](docs/architecture.md).
+
 ## Aquarius
 
 Aquarius is a protocol-aware control system for DeFi position protection (starting with Aave), combining:

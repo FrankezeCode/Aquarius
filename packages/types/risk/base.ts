@@ -14,7 +14,7 @@
 // ── Protocol Enum ────────────────────────────────────────────────────
 
 /** Protocols supported by the Aquarius Risk API. */
-export type ProtocolId = "aave" | "lido" | "uniswap";
+export type ProtocolId = "aave" | "lido" | "uniswap" | "kamino";
 
 // ── Core Value Objects ───────────────────────────────────────────────
 
@@ -22,10 +22,15 @@ export type ProtocolId = "aave" | "lido" | "uniswap";
 export interface RiskMetadata {
   /** Which protocol produced this risk. */
   readonly protocol: ProtocolId;
-  /** Numeric chain ID (1 = Ethereum, 137 = Polygon, etc.). */
+  /**
+   * EVM: EIP-155 chain ID. Non-EVM (e.g. Kamino on Solana): use **0** as sentinel
+   * and set `solanaCluster` — do not treat 0 as an EVM chain.
+   */
   readonly chainId: number;
   /** Unix epoch ms when the risk was computed. */
   readonly timestamp: number;
+  /** Solana cluster when `protocol === "kamino"` (required for Kamino snapshots). */
+  readonly solanaCluster?: "mainnet-beta" | "devnet" | "testnet";
 }
 
 /** Severity classification. */

@@ -15,6 +15,7 @@ import { AAVE_SUPPORTED_CHAINS } from "@/protocols/aave/supportedChains";
 import { COMPOUND_SUPPORTED_CHAINS } from "@/protocols/compound/supportedChains";
 import { LIDO_SUPPORTED_CHAINS } from "@/protocols/lido/supportedChains";
 import { UNISWAP_SUPPORTED_CHAINS } from "@/protocols/uniswap/supportedChains";
+import { KAMINO_SUPPORTED_CHAINS } from "@/protocols/kamino/supportedChains";
 
 /**
  * Maps protocol ID → ordered list of supported chain IDs.
@@ -25,6 +26,7 @@ const PROTOCOL_CHAIN_MAP: Record<string, readonly string[]> = {
   compound: COMPOUND_SUPPORTED_CHAINS,
   lido: LIDO_SUPPORTED_CHAINS,
   uniswap: UNISWAP_SUPPORTED_CHAINS,
+  kamino: KAMINO_SUPPORTED_CHAINS,
 };
 
 /**

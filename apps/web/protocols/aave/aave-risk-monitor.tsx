@@ -24,6 +24,7 @@ import {
   type RiskEvent,
 } from "@/components/aave-risk-monitor";
 import { ChainIcon } from "@/components/navigation/chain-icon";
+import { isEvmChain } from "@/registry/chains";
 import { useProtocolChain } from "@/context/protocol-chain-context";
 import { useCREWorkflow, type CREWorkflowData } from "@/lib/use-cre-workflow";
 import { useProtocolHealth, useUserRisk } from "@/lib/use-health-score";
@@ -115,7 +116,10 @@ function mapEvents(data: CREWorkflowData): RiskEvent[] {
 
 export function AaveRiskMonitor() {
   const { activeChain } = useProtocolChain();
-  const chain = activeChain?.id ?? "ethereum";
+  /** Aave only uses EVM registry chains; narrow from ChainDefinition (includes Solana). */
+  const evmActiveChain =
+    activeChain && isEvmChain(activeChain) ? activeChain : null;
+  const chain = evmActiveChain?.id ?? "ethereum";
   const { data, error, isLoading } = useCREWorkflow(chain);
   const { data: protocolHealth } = useProtocolHealth("aave", chain);
   const { data: actionableMetrics } = useActionableMetrics(chain);
@@ -148,8 +152,9 @@ export function AaveRiskMonitor() {
   const [hasBufferVaultDemoDeposit, setHasBufferVaultDemoDeposit] = useState(false);
 
   const targetChainIdHex = useMemo(
-    () => (activeChain ? `0x${activeChain.chainId.toString(16)}` : null),
-    [activeChain]
+    () =>
+      evmActiveChain ? `0x${evmActiveChain.chainId.toString(16)}` : null,
+    [evmActiveChain]
   );
   const isWalletOnWrongChain = Boolean(
     isWalletConnected &&
@@ -242,15 +247,15 @@ export function AaveRiskMonitor() {
   }, []);
 
   useEffect(() => {
-    if (!isWalletConnected || !activeChain) return;
+    if (!isWalletConnected || !evmActiveChain) return;
     const currentChainId =
       walletChainIdHex && walletChainIdHex.startsWith("0x")
         ? hexToNumberChainId(walletChainIdHex)
         : null;
-    if (currentChainId === activeChain.chainId) return;
+    if (currentChainId === evmActiveChain.chainId) return;
 
-    switchOrAddChain(activeChain, {
-      rpcUrl: resolveTenderlyRpcUrl(activeChain.id),
+    switchOrAddChain(evmActiveChain, {
+      rpcUrl: resolveTenderlyRpcUrl(evmActiveChain.id),
     })
       .then(async () => {
         const syncedChainHex = await getChainIdHex();
@@ -265,7 +270,7 @@ export function AaveRiskMonitor() {
               : "Unable to switch wallet network.";
         setWalletError(message);
       });
-  }, [activeChain, isWalletConnected, walletChainIdHex]);
+  }, [evmActiveChain, isWalletConnected, walletChainIdHex]);
 
   useEffect(() => {
     if (
@@ -457,14 +462,14 @@ export function AaveRiskMonitor() {
             onEmployAgent={handleEmployAgent}
             onDeactivateAgent={async () => {
               if (!walletAddress) throw new Error("Wallet is not connected.");
-              if (!activeChain) throw new Error("Active chain is not available.");
+              if (!evmActiveChain) throw new Error("Active chain is not available.");
               setDeactivationError(null);
               setIsDeactivating(true);
               try {
                 await deactivatePolicyIntent({
                   walletAddress,
                   chain,
-                  chainId: activeChain.chainId,
+                  chainId: evmActiveChain.chainId,
                 });
                 await refreshEnrollment();
               } catch (err) {
@@ -501,7 +506,7 @@ export function AaveRiskMonitor() {
         onOpenChange={setIsEnrollmentModalOpen}
         walletAddress={isWalletConnected ? walletAddress : undefined}
         chain={chain}
-        chainId={activeChain?.chainId ?? 1}
+        chainId={evmActiveChain?.chainId ?? 1}
         providerAvailable={providerAvailable}
         isWalletOnWrongChain={isWalletOnWrongChain}
         walletError={walletError}

@@ -1,13 +1,20 @@
 /**
- * Chain Registry — Single source of truth for all supported blockchain networks.
+ * Chain Registry — Single source of truth for supported networks.
  *
- * Adding a new chain:
+ * EVM chains use EIP-155 `chainId`. Solana uses `family: "solana"` and `cluster`
+ * (no EVM chainId — do not invent one).
+ *
+ * Adding a chain:
  * 1. Add entry to CHAINS below
- * 2. Create chain config folder at chains/{chainId}/
+ * 2. For EVM: create chain config at chains/{chainId}/ when needed
  * 3. Register in protocol supportedChains.ts where applicable
+ *
+ * @see docs/adr/0001-domains-and-boundaries.md
  */
 
-export interface ChainDefinition {
+/** EVM L1/L2 entry (MetaMask / ethers compatible). */
+export type EvmChainDefinition = {
+  family: "evm";
   id: string;
   name: string;
   chainId: number;
@@ -15,10 +22,29 @@ export interface ChainDefinition {
   symbol: string;
   nativeCurrency: { name: string; symbol: string; decimals: number };
   blockExplorer: string;
+};
+
+/** Solana cluster entry (non-EVM). */
+export type SolanaChainDefinition = {
+  family: "solana";
+  id: "solana";
+  name: string;
+  cluster: "mainnet-beta" | "devnet" | "testnet";
+  color: string;
+  symbol: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  blockExplorer: string;
+};
+
+export type ChainDefinition = EvmChainDefinition | SolanaChainDefinition;
+
+export function isEvmChain(c: ChainDefinition): c is EvmChainDefinition {
+  return c.family === "evm";
 }
 
 export const CHAINS: Record<string, ChainDefinition> = {
   ethereum: {
+    family: "evm",
     id: "ethereum",
     name: "Ethereum",
     chainId: 1,
@@ -28,6 +54,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://etherscan.io",
   },
   polygon: {
+    family: "evm",
     id: "polygon",
     name: "Polygon",
     chainId: 137,
@@ -37,6 +64,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://polygonscan.com",
   },
   arbitrum: {
+    family: "evm",
     id: "arbitrum",
     name: "Arbitrum",
     chainId: 42161,
@@ -46,6 +74,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://arbiscan.io",
   },
   optimism: {
+    family: "evm",
     id: "optimism",
     name: "Optimism",
     chainId: 10,
@@ -55,6 +84,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://optimistic.etherscan.io",
   },
   base: {
+    family: "evm",
     id: "base",
     name: "Base",
     chainId: 8453,
@@ -64,6 +94,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://basescan.org",
   },
   bnb: {
+    family: "evm",
     id: "bnb",
     name: "BNB Smart Chain",
     chainId: 56,
@@ -73,6 +104,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://bscscan.com",
   },
   avalanche: {
+    family: "evm",
     id: "avalanche",
     name: "Avalanche",
     chainId: 43114,
@@ -82,6 +114,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://snowtrace.io",
   },
   fantom: {
+    family: "evm",
     id: "fantom",
     name: "Fantom",
     chainId: 250,
@@ -91,6 +124,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://ftmscan.com",
   },
   scroll: {
+    family: "evm",
     id: "scroll",
     name: "Scroll",
     chainId: 534352,
@@ -100,6 +134,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://scrollscan.com",
   },
   zksync: {
+    family: "evm",
     id: "zksync",
     name: "ZkSync",
     chainId: 324,
@@ -109,6 +144,7 @@ export const CHAINS: Record<string, ChainDefinition> = {
     blockExplorer: "https://explorer.zksync.io",
   },
   linea: {
+    family: "evm",
     id: "linea",
     name: "Linea",
     chainId: 59144,
@@ -117,7 +153,17 @@ export const CHAINS: Record<string, ChainDefinition> = {
     nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
     blockExplorer: "https://lineascan.build",
   },
-} as const;
+  solana: {
+    family: "solana",
+    id: "solana",
+    name: "Solana",
+    cluster: "mainnet-beta",
+    color: "#9945FF",
+    symbol: "SOL",
+    nativeCurrency: { name: "Solana", symbol: "SOL", decimals: 9 },
+    blockExplorer: "https://explorer.solana.com",
+  },
+};
 
 export type ChainId = keyof typeof CHAINS;
 

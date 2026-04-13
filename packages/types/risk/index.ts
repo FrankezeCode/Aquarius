@@ -12,10 +12,14 @@ export type {
   EvaluatableRisk,
 } from "./base.js";
 
+// CRE escalation (shared kernel)
+export type { CreEscalationStage } from "./cre.js";
+
 // Protocol bounded contexts (adapter-side only)
 export type { AaveRiskSnapshot } from "./aave.js";
 export type { LidoRiskSnapshot } from "./lido.js";
 export type { UniswapRiskSnapshot } from "./uniswap.js";
+export type { KaminoRiskSnapshot, KaminoRiskMetadata } from "./kamino.js";
 
 // Health Score system
 export type {

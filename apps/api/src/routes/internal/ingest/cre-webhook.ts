@@ -4,19 +4,19 @@
  * Bounded context: CRE (Chainlink Runtime Environment)
  * This endpoint receives webhook payloads from CRE workflow triggers.
  *
- * APPLICATION LAYER — pure orchestration:
+ * APPLICATION LAYER — orchestration:
  *   1. Validate payload
- *   2. Resolve monitor from registry
- *   3. Run monitor → normalized MonitorSnapshot
- *   4. Cache snapshot in RiskQueryService
- *   5. Return response derived from snapshot
+ *   2. Route by workflowId (Kamino vs Aave vs noop)
+ *   3a. Aave: resolve monitor → run monitor → cache snapshot
+ *   3b. Kamino: live RPC read or synthetic snapshot → intelligence → mitigation intent
+ *   4. (Aave) Cache snapshot in RiskQueryService
+ *   5. Return response derived from snapshot / escalation
  *
- * This layer NEVER imports domain services, NEVER transforms domain
- * objects, NEVER performs normalization.  All mapping is delegated
- * to the protocol monitor adapter (AaveMonitor).
+ * Kamino mapping lives in protocols/kamino-solana; Aave remains in AaveMonitor.
  *
  * Integrated workflows:
  *   - aave-risk  → Aave Risk Intelligence pipeline (via AaveMonitor)
+ *   - kamino-risk* → Kamino snapshot / intelligence → KaminoMitigationService (non-EVM)
  *
  * local_don_ccc end-to-end mode (new):
  * ------------------------------------
@@ -25,8 +25,9 @@
  *
  *   1) validates callback freshness (anti-stale guard)
  *   2) reserves correlationId in an idempotency ledger
- *   3) builds deterministic ExecutionContext from callback payload
- *   4) hands off to ExecutionRouter → CCC adapter path
+ *   3) builds deterministic ExecutionContext from callback payload (Aave)
+ *      or Kamino escalation + KaminoMitigationIntent (kamino-risk* workflows)
+ *   4) hands off to ExecutionRouter → CCC adapter (Aave) or KaminoMitigationService (Kamino)
  *   5) enforces execution timeout
  *   6) marks ledger state (completed / failed / timed_out)
  *   7) returns machine-readable localDonExecution status
@@ -47,12 +48,35 @@ import {
   type CREWebhookPayload,
   parseCreWebhookBody,
 } from "./cre-webhook.schema.js";
+import { loadConfig } from "../../../config/index.js";
+import {
+  fetchKaminoRiskSnapshotForCre,
+  KaminoSnapshotError,
+  scheduleKaminoSnapshotCacheWarm,
+  type KaminoSnapshotFreshness,
+} from "../../../infrastructure/kamino/kamino-snapshot.service.js";
+import { scoreKaminoSnapshot } from "../../../protocols/kamino-solana/risk-intelligence/scorer.js";
+import { mapSnapshotToEscalationAndIntent } from "../../../protocols/kamino-solana/mappers/snapshot-to-escalation.js";
+import {
+  getKaminoMitigationService,
+  type KaminoMitigationResult,
+} from "../../../protocols/kamino-solana/application/kamino-mitigation.service.js";
+import { parseKaminoSyntheticPayload } from "./cre-webhook-kamino.schema.js";
+import type { KaminoRiskSnapshot } from "@aquarius/types";
+import type { KaminoIntelligenceV1 } from "../../../protocols/kamino-solana/risk-intelligence/scorer.js";
 
 /** Workflow IDs that trigger the Aave risk-intelligence pipeline. */
 const AAVE_RISK_WORKFLOWS = new Set([
   "aave-risk",
   "aave-risk-monitor",
   "aave-risk-confidential-http",
+]);
+
+/** Workflow IDs that trigger Kamino lending intelligence (Solana, non-EVM). */
+const KAMINO_RISK_WORKFLOWS = new Set([
+  "kamino-risk",
+  "kamino-risk-monitor",
+  "kamino-risk-confidential-http",
 ]);
 
 const LOCAL_DON_EXECUTION_MODE = "local_don_ccc";
@@ -235,6 +259,206 @@ export async function registerCREWebhookRoute(
       });
     }
     const payload = parsed.data;
+
+    // ── Kamino Risk (Solana) — intelligence + mitigation edge ────────
+    if (KAMINO_RISK_WORKFLOWS.has(payload.workflowId)) {
+      const pipelineStart = performance.now();
+      const rawData = payload.data as Record<string, unknown> | undefined;
+      const data = rawData ?? {};
+      const agentId = toStringValue(data.agentId) ?? "kamino-cre-agent";
+      const correlationIdStr =
+        typeof data.correlationId === "string" ? data.correlationId : undefined;
+
+      let snapshot: KaminoRiskSnapshot;
+      let intelligence: KaminoIntelligenceV1;
+      let snapshotFreshness: KaminoSnapshotFreshness | undefined;
+
+      try {
+        if (data.synthetic === true) {
+          const syn = parseKaminoSyntheticPayload(data);
+          if (!syn.success) {
+            return reply.status(400).send({
+              error: "Invalid synthetic Kamino payload",
+              issues: syn.error.issues,
+              workflowId: payload.workflowId,
+            });
+          }
+          snapshot = syn.data.snapshot;
+          intelligence = syn.data.intelligence;
+          snapshotFreshness = { live: true };
+        } else {
+          const config = loadConfig();
+          const wallet = toStringValue(data.wallet);
+          const market =
+            toStringValue(data.market) ?? config.kaminoDefaultMarketPubkey;
+          if (!wallet || !market) {
+            return reply.status(400).send({
+              error: "Missing wallet or market",
+              message:
+                "Provide data.wallet and data.market (or set KAMINO_MARKET_PUBKEY) for live Kamino read.",
+              workflowId: payload.workflowId,
+            });
+          }
+          const fetched = await fetchKaminoRiskSnapshotForCre({
+            config,
+            wallet,
+            marketPubkey: market,
+          });
+          snapshot = fetched.snapshot;
+          snapshotFreshness = fetched.freshness;
+          if (
+            fetched.freshness.live === false &&
+            config.kaminoCreBackgroundRefreshEnabled
+          ) {
+            scheduleKaminoSnapshotCacheWarm({
+              config,
+              wallet,
+              marketPubkey: market,
+            });
+          }
+          intelligence = scoreKaminoSnapshot(snapshot);
+        }
+      } catch (err) {
+        if (err instanceof KaminoSnapshotError) {
+          const status =
+            err.code === "OBLIGATION_NOT_FOUND"
+              ? 404
+              : err.code === "KAMINO_READ_DISABLED"
+                ? 503
+                : err.code === "CIRCUIT_OPEN"
+                  ? 503
+                  : err.code === "TIMEOUT"
+                    ? 504
+                    : 502;
+          return reply.status(status).send({
+            error: err.code,
+            message: err.message,
+            workflowId: payload.workflowId,
+          });
+        }
+        request.log.error(err, "Kamino risk pipeline failed");
+        return reply.status(500).send({
+          error: "Kamino risk pipeline error",
+          workflowId: payload.workflowId,
+        });
+      }
+
+      const { escalation, intent } = mapSnapshotToEscalationAndIntent({
+        snapshot,
+        intelligence,
+        agentId,
+        correlationId: correlationIdStr,
+      });
+
+      request.log.info(
+        {
+          event: "kamino_escalation",
+          workflowId: payload.workflowId,
+          stage: escalation.stage,
+          domain: escalation.domain,
+          wallet: escalation.wallet,
+          marketPubkey: escalation.marketPubkey,
+          cluster: escalation.cluster,
+          synthetic: data.synthetic === true,
+        },
+        "Kamino escalation notification (intelligence event, not raw obligation)"
+      );
+
+      const isConfidential = data.confidential === true;
+      const isLocalDonMode =
+        (process.env.EXECUTION_MODE ?? "").trim() === LOCAL_DON_EXECUTION_MODE;
+
+      let localDonExecution:
+        | {
+            status: "executed" | "duplicate-ignored" | "replay-rejected";
+            mode: "local_don_ccc";
+          }
+        | undefined;
+
+      let mitigationResult: KaminoMitigationResult | undefined;
+
+      const mitigation = getKaminoMitigationService();
+
+      if (isConfidential && isLocalDonMode) {
+        if (!correlationIdStr) {
+          return reply.status(400).send({
+            error: "Missing correlationId for local_don_ccc Kamino confidential callback",
+            workflowId: payload.workflowId,
+            ingestionMode: "confidential-http",
+          });
+        }
+
+        const reservation = reserveCorrelation(correlationIdStr, payload.timestamp);
+        if (!reservation.accepted) {
+          if (reservation.reason === "stale") {
+            markCorrelation(correlationIdStr, "timed_out");
+            return reply.status(409).send({
+              error: "Stale confidential callback rejected",
+              workflowId: payload.workflowId,
+              correlationId: correlationIdStr,
+              ingestionMode: "confidential-http",
+              executionMode: LOCAL_DON_EXECUTION_MODE,
+            });
+          }
+
+          localDonExecution = {
+            status:
+              reservation.state === "processing"
+                ? "duplicate-ignored"
+                : "replay-rejected",
+            mode: "local_don_ccc",
+          };
+        } else {
+          try {
+            mitigationResult = await withTimeout(
+              mitigation.execute(intent),
+              getExecutionTimeoutMs()
+            );
+            markCorrelation(correlationIdStr, "completed");
+            localDonExecution = { status: "executed", mode: "local_don_ccc" };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            const timedOut = message.startsWith("LOCAL_DON_CCC_TIMEOUT_");
+            markCorrelation(correlationIdStr, timedOut ? "timed_out" : "failed");
+            return reply.status(timedOut ? 504 : 500).send({
+              error: timedOut
+                ? "local_don_ccc Kamino execution timed out"
+                : "local_don_ccc Kamino execution failed",
+              workflowId: payload.workflowId,
+              correlationId: correlationIdStr,
+              ingestionMode: "confidential-http",
+              executionMode: LOCAL_DON_EXECUTION_MODE,
+              details: message,
+            });
+          }
+        }
+      } else {
+        mitigationResult = await mitigation.execute(intent);
+      }
+
+      const latencyMs = Math.round(performance.now() - pipelineStart);
+
+      return reply.status(200).send({
+        status: "processed",
+        domain: "kamino-solana" as const,
+        workflowId: payload.workflowId,
+        chainId: payload.chainId,
+        escalation,
+        mitigation: mitigationResult
+          ? {
+              intentId: mitigationResult.intentId,
+              status: mitigationResult.status,
+            }
+          : undefined,
+        snapshotTimestamp: snapshot.metadata.timestamp,
+        snapshotFreshness,
+        intelligenceSummary: intelligence.summary,
+        latencyMs,
+        ingestionMode: isConfidential ? "confidential-http" : "standard",
+        correlationId: correlationIdStr,
+        ...(localDonExecution ? { localDonExecution } : {}),
+      });
+    }
 
     // ── Route to Aave Risk Intelligence pipeline ───────────────────
     if (AAVE_RISK_WORKFLOWS.has(payload.workflowId)) {

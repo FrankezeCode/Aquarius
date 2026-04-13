@@ -17,6 +17,7 @@ import { registerCopilotRoutes } from "./copilot/index.js";
 import { registerAgentEnrollmentRoutes } from "./agent-enrollment/index.js";
 import { registerZgRoutes } from "./zg/index.js";
 import { registerVaultGatewayPlugin } from "./vault-gateway/index.js";
+import { registerKaminoRiskRoutes } from "./kamino-risk/index.js";
 
 export interface V1RouteRegisterOpts extends FastifyPluginOptions {
   copilotRateLimitMax?: number;
@@ -47,4 +48,7 @@ export async function registerV1Routes(
 
   // ── Cross-chain vault gateway (manifest + advisory routing; no custody) ──
   await app.register(registerVaultGatewayPlugin, { prefix: "/vault-gateway" });
+
+  // ── Kamino / Solana bounded context (separate from aave-risk) ─────────────
+  await app.register(registerKaminoRiskRoutes, { prefix: "/kamino-risk" });
 }

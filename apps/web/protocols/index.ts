@@ -8,12 +8,14 @@ import { aaveProtocol } from "./aave";
 import { uniswapProtocol } from "./uniswap";
 import { compoundProtocol } from "./compound";
 import { lidoProtocol } from "./lido";
+import { kaminoProtocol } from "./kamino";
 
 export const protocols: Record<string, ProtocolDefinition> = {
   aave: aaveProtocol,
   uniswap: uniswapProtocol,
   compound: compoundProtocol,
   lido: lidoProtocol,
+  kamino: kaminoProtocol,
 };
 
 export type ProtocolId = keyof typeof protocols;

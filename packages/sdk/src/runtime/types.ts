@@ -16,7 +16,7 @@
 
 // ── Protocol Enum ────────────────────────────────────────────────────
 
-export type ProtocolId = "aave" | "lido" | "uniswap";
+export type ProtocolId = "aave" | "lido" | "uniswap" | "kamino";
 
 // ── Core Value Objects ───────────────────────────────────────────────
 
@@ -24,6 +24,7 @@ export interface RiskMetadata {
   readonly protocol: ProtocolId;
   readonly chainId: number;
   readonly timestamp: number;
+  readonly solanaCluster?: "mainnet-beta" | "devnet" | "testnet";
 }
 
 export type RiskSeverity = "low" | "medium" | "high" | "critical";

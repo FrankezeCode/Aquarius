@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChainDefinition } from "@/registry/chains";
+import { isEvmChain, type ChainDefinition } from "@/registry/chains";
 
 export interface BrowserEthereumProvider {
   isMetaMask?: boolean;
@@ -99,6 +99,12 @@ export async function switchOrAddChain(
   chain: ChainDefinition,
   options?: { rpcUrl?: string }
 ): Promise<void> {
+  if (!isEvmChain(chain)) {
+    throw new WalletConnectorError(
+      "unsupported_chain",
+      "Solana is not switched via the EVM wallet API. Use a Solana wallet flow when implemented."
+    );
+  }
   const provider = getWalletProvider();
   const chainIdHex = toHexChainId(chain.chainId);
   try {

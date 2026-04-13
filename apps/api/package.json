@@ -8,11 +8,15 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/apps/api/src/server.js",
     "test": "cross-env NODE_ENV=test node --import tsx --test tests/**/*.test.ts",
+    "lint": "node scripts/check-domain-boundaries.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",
     "@fastify/rate-limit": "^10.3.0",
+    "@kamino-finance/klend-sdk": "^7.3.22",
+    "@solana/kit": "^2.3.0",
+    "@solana/web3.js": "^1.98.4",
     "fastify": "^5.1.0",
     "viem": "^2.46.2",
     "zod": "^4.3.6"
