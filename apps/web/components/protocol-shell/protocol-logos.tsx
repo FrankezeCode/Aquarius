@@ -16,3 +16,24 @@ export function AaveLogo({ className, ...props }: LucideProps) {
     </svg>
   );
 }
+
+/** Kamino — abstract mark for nav and learn surfaces */
+export function KaminoLogo({ className, ...props }: LucideProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      <path d="M6 4v16" />
+      <path d="M18 4 10 12l8 8" />
+      <path d="M14 8l-4 4" />
+    </svg>
+  );
+}

@@ -10,12 +10,13 @@ import { compoundProtocol } from "./compound";
 import { lidoProtocol } from "./lido";
 import { kaminoProtocol } from "./kamino";
 
+/** Order matters for nav / protocol lists: active protocols first (Aave, Kamino), then coming-soon. */
 export const protocols: Record<string, ProtocolDefinition> = {
   aave: aaveProtocol,
+  kamino: kaminoProtocol,
   uniswap: uniswapProtocol,
   compound: compoundProtocol,
   lido: lidoProtocol,
-  kamino: kaminoProtocol,
 };
 
 export type ProtocolId = keyof typeof protocols;

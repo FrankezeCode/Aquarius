@@ -26,7 +26,8 @@ interface ProtocolDropdownProps {
  * No hardcoded chain lists — adding a chain auto-updates the dropdown.
  */
 export function ProtocolDropdown({ className }: ProtocolDropdownProps) {
-  const { activeProtocol, activeChain, switchChain } = useProtocolChain();
+  const { activeProtocol, activeChain, switchChain, setMonitorTargetProtocol } =
+    useProtocolChain();
   const navItems = getProtocolNavItems();
 
   return (
@@ -70,6 +71,11 @@ export function ProtocolDropdown({ className }: ProtocolDropdownProps) {
                 onChainSelect={switchChain}
                 onNavigate={() => {
                   /* Popover auto-closes on click outside */
+                }}
+                onActiveProtocolSelect={(slug) => {
+                  if (slug === "aave" || slug === "kamino") {
+                    setMonitorTargetProtocol(slug);
+                  }
                 }}
               />
             );

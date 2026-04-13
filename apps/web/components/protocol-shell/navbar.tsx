@@ -26,7 +26,15 @@ const Navbar = () => {
     ? protocolMeta[activeProtocolSlug]
     : null;
 
-  const { activeChain, switchChain } = useProtocolChain();
+  const { activeChain, switchChain, monitorTargetProtocolId } =
+    useProtocolChain();
+
+  const monitorMeta = protocolMeta[monitorTargetProtocolId];
+  const monitorHref = `/protocol/${monitorTargetProtocolId}`;
+  /** monitorTargetProtocolId is aave|kamino from context; fallback if meta missing */
+  const monitorLabel = monitorMeta
+    ? `Monitor ${monitorMeta.name} Risk`
+    : "Monitor protocol risk";
 
   const isActive = (path: string) => pathname.startsWith(path);
   const navItems = getProtocolNavItems();
@@ -88,12 +96,12 @@ const Navbar = () => {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/protocol/aave">
+                <Link href={monitorHref}>
                   <Button
                     size="sm"
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    Monitor Aave
+                    {monitorLabel}
                   </Button>
                 </Link>
               </>
@@ -289,11 +297,11 @@ const Navbar = () => {
                       </Button>
                     </Link>
                     <Link
-                      href="/protocol/aave"
+                      href={monitorHref}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Button className="w-full bg-primary text-primary-foreground">
-                        Monitor Aave
+                        {monitorLabel}
                       </Button>
                     </Link>
                   </>

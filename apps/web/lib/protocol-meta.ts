@@ -1,5 +1,8 @@
 import type { LucideProps } from "lucide-react";
-import { AaveLogo } from "@/components/protocol-shell/protocol-logos";
+import {
+  AaveLogo,
+  KaminoLogo,
+} from "@/components/protocol-shell/protocol-logos";
 
 export interface ProtocolMetaItem {
   name: string;
@@ -12,5 +15,10 @@ export const protocolMeta: Record<string, ProtocolMetaItem> = {
     name: "Aave",
     logo: AaveLogo,
     learnPath: "/protocol/aave/learn",
+  },
+  kamino: {
+    name: "Kamino",
+    logo: KaminoLogo,
+    learnPath: "/protocol/kamino/learn",
   },
 };

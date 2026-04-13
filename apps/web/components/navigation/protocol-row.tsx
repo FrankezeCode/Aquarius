@@ -14,6 +14,8 @@ interface ProtocolRowProps {
   activeChain: ChainDefinition | null;
   onChainSelect: (chainId: string) => void;
   onNavigate: () => void;
+  /** When set, invoked for aave/kamino when the protocol link is activated */
+  onActiveProtocolSelect?: (slug: string) => void;
 }
 
 /**
@@ -31,6 +33,7 @@ export function ProtocolRow({
   activeChain,
   onChainSelect,
   onNavigate,
+  onActiveProtocolSelect,
 }: ProtocolRowProps) {
   if (status === "coming") {
     return (
@@ -50,7 +53,12 @@ export function ProtocolRow({
     >
       <Link
         href={`/protocol/${slug}`}
-        onClick={onNavigate}
+        onClick={() => {
+          onNavigate();
+          if (slug === "aave" || slug === "kamino") {
+            onActiveProtocolSelect?.(slug);
+          }
+        }}
         className={cn(
           "font-medium transition-colors hover:text-foreground",
           isCurrentProtocol ? "text-foreground" : "text-muted-foreground"

@@ -2,11 +2,16 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Shield, Eye, Zap, Waves, BarChart3, Activity } from "lucide-react";
+import { Shield, Eye, Zap, Waves, BarChart3, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/protocol-shell/navbar";
 import Footer from "@/components/protocol-shell/footer";
 import { EcosystemMap } from "@/components/landing/ecosystem-map";
+import {
+  LandingBottomExploreCta,
+  LandingHeroBadge,
+  LandingHeroProtocolPanel,
+} from "@/components/landing/home-landing-monitor";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -119,18 +124,12 @@ const Index = () => {
             animate="animate"
             className="max-w-4xl mx-auto text-center"
           >
-            {/* Badge */}
-            <motion.div variants={fadeInUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/50 text-sm">
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                Live on Aave V3
-              </span>
-            </motion.div>
+            <LandingHeroBadge />
 
             {/* Headline — negative margins only md+ so mobile keeps container px-4 breathing room */}
             <motion.h1
               variants={fadeInUp}
-              className="hero-laser-container text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter mb-6 md:-mx-16 lg:-mx-24"
+              className="hero-laser-container mb-6 text-5xl font-black uppercase tracking-tighter sm:text-6xl md:-mx-16 md:text-8xl lg:-mx-24 lg:text-9xl"
             >
               <span className="block">Protection at</span>
               <span className="block hero-chrome-gradient">Hyper-Speed.</span>
@@ -139,38 +138,12 @@ const Index = () => {
             {/* Sub-hero heading */}
             <motion.h2
               variants={fadeInUp}
-              className="text-xl md:text-2xl font-semibold mb-4 max-w-2xl mx-auto"
+              className="mx-auto mb-4 max-w-2xl text-xl font-semibold md:text-2xl"
             >
               Real-time, protocol-aware risk intelligence for DeFi.
             </motion.h2>
 
-            {/* Sub-hero body */}
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
-            >
-              Continuously monitors health factors, account exposure, and on-chain stress signals{" "}
-              <span className="text-white">— starting with Aave —</span> and escalates before
-              liquidation risk becomes inevitable.
-            </motion.p>
-
-            {/* CTAs */}
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Link href="/protocol/aave">
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-sm gap-2 text-base px-8">
-                  Monitor Aave Risk
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/docs">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8">
-                  Documentation
-                </Button>
-              </Link>
-            </motion.div>
+            <LandingHeroProtocolPanel />
           </motion.div>
 
           {/* Trust Indicators */}
@@ -216,7 +189,8 @@ const Index = () => {
               {
                 step: "01",
                 title: "Choose a Protocol",
-                description: "Start with Aave. More protocols coming soon. Each one is a focused intelligence lab.",
+                description:
+                  "Pick Aave or Kamino today. More protocols are on the roadmap—each one is a focused intelligence lab.",
                 icon: Waves,
               },
               {
@@ -395,28 +369,10 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 md:py-32 relative">
+      <section className="relative py-20 md:py-32">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Ready to see what others can&apos;t?
-            </h2>
-            <p className="text-lg text-muted-foreground mb-10">
-              Start exploring protocol intelligence with Aave. No wallet required.
-            </p>
-            <Link href="/protocol/aave">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow gap-2 text-lg px-10 py-6">
-                Explore Aave Now
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </Link>
-          </motion.div>
+        <div className="container relative z-10 mx-auto px-4">
+          <LandingBottomExploreCta />
         </div>
       </section>
 
