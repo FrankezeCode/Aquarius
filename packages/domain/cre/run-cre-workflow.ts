@@ -39,6 +39,14 @@ import type { Stage, ActionRequired, LastAction, StageStability, EscalationTimel
 
 export type ProtocolStatus = "stable" | "watch" | "high-risk";
 
+/** Optional trace when orchestration delegates to vault protocol adapters (buffer / protect). */
+export interface CreVaultTrace {
+  readonly command: string;
+  readonly simulated: boolean;
+  readonly steps: string[];
+  readonly txHashes?: string[];
+}
+
 export interface CREWorkflowResult {
   protocolStatus: ProtocolStatus;
   riskScore: {
@@ -100,6 +108,8 @@ export interface CREWorkflowResult {
     severity: "info" | "warning" | "critical";
   }>;
   timestamp: number;
+  /** Populated for vault-gateway intents executed via protocol adapters (Phase 5). */
+  vaultTrace?: CreVaultTrace;
 }
 
 // ── Mapping helpers ──────────────────────────────────────────────────

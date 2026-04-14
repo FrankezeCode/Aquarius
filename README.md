@@ -283,6 +283,8 @@ flowchart TB
 
 ### Vault, staking, and yield (roadmap)
 
+Authoritative **vault strategy + vault-gateway API sketch** (Phase 1): [`docs/vault-strategy.md`](docs/vault-strategy.md). **Phase 0** orchestration/custody/env/comms decisions: [`docs/adr/0003-phase0-orchestration-and-execution.md`](docs/adr/0003-phase0-orchestration-and-execution.md).
+
 `AquariusPerChainVault` ([`contracts/src/vaults/AquariusPerChainVault.sol`](contracts/src/vaults/AquariusPerChainVault.sol)) currently holds **ERC-20 shares only**. **Native staking, delegation, and LST routing** are intended to plug in via **future strategy adapters** (allowlisted contracts or modules), not via the API server holding keys.
 
 ```mermaid
@@ -380,7 +382,7 @@ flowchart LR
 
 Maps the **0G chain / multi-chain** angle to Aquarius: where 0G appears in routing and contracts.
 
-- **In this repo:** Read-only **vault gateway** manifest and per-chain/asset **advisory** routing; responses include a logical **`og_chain`** (aliases such as `0g`, `og`, `galileo` in query params). Services [`apps/api/src/services/vault-gateway/`](apps/api/src/services/vault-gateway/), routes [`apps/api/src/routes/v1/vault-gateway/`](apps/api/src/routes/v1/vault-gateway/) — `GET /api/v1/vault-gateway/manifest`, `GET /api/v1/vault-gateway/routing`. Output is **guidance for clients**, not on-chain execution.
+- **In this repo:** **Vault gateway** — cacheable **GET** [`/manifest`](apps/api/src/routes/v1/vault-gateway/routes.ts), [`/routing`](apps/api/src/routes/v1/vault-gateway/routes.ts) (**advisory**; logical **`og_chain`**, aliases `0g` / `og` / `galileo` in query params), and **POST** [`/intents`](apps/api/src/routes/v1/vault-gateway/post-intents.ts) for **typed execution intents** (Zod body, Bearer auth, rate limits, idempotency; `OrchestrationPort`; opt-in via `VAULT_GATEWAY_EXECUTION_ENABLED`). Services [`apps/api/src/services/vault-gateway/`](apps/api/src/services/vault-gateway/). GET output remains **guidance**, not on-chain execution; POST submits work to the orchestration rail, not user-signed txs from this handler.
 - **Roadmap:** On-chain **strategy adapters** and optional **delegation / yield** paths that touch 0G-style networks—see the vault roadmap diagram under [Architecture Diagram](#architecture-diagram); not live in `AquariusPerChainVault` yet.
 
 ### Data and availability
@@ -671,6 +673,7 @@ pnpm dev --filter web
 
 ## Testing
 
+- **Public API trust boundaries (read-only vs execution):** [`docs/api/public-surface.md`](docs/api/public-surface.md)
 - protocol and architecture tests: [`apps/api/tests/`](apps/api/tests/)
 - CRE simulation runner: [`scripts/run-cre-simulation.ts`](scripts/run-cre-simulation.ts)
 - full validation runner: [`scripts/run-full-validation.ts`](scripts/run-full-validation.ts)

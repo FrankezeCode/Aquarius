@@ -18,3 +18,8 @@ export {
   VaultDryRunOrchestrator,
   type DryRunResult,
 } from "./dry-run-orchestrator.service.js";
+
+export {
+  BufferSolvencyService,
+  type BufferHealthResponseDto,
+} from "./buffer-solvency.service.js";

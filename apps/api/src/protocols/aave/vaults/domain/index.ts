@@ -37,3 +37,16 @@ export type {
   VaultAgentDecision,
   VaultRiskAlert,
 } from "./agent-decision.js";
+
+export {
+  type BufferPolicyConfig,
+  type BufferAlertLevel,
+  type BufferHealthSnapshot,
+  type StressSolvencyResult,
+  buildUsdPerUnitMap,
+  aggregateTvlUsd,
+  computeBufferHealth,
+  withTimeToRefill,
+  projectSolvencyUnderStress,
+  suggestMitigationForWatch,
+} from "./buffer-health.js";

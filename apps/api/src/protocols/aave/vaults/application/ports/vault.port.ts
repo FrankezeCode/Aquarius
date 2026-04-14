@@ -48,6 +48,15 @@ export interface BufferVaultPort {
 
   /** List all aqAssets for a given owner. */
   listByOwner(owner: string): Promise<AqAsset[]>;
+
+  /**
+   * Read-only snapshot of all positions for buffer health / metrics (ops).
+   * Production implementations aggregate from DB or chain; in-memory iterates the store.
+   */
+  snapshotPositionsForMetrics(): Promise<{
+    readonly aqAssets: readonly AqAsset[];
+    readonly collaterals: readonly CollateralAsset[];
+  }>;
 }
 
 // ── Staking Integration Port ─────────────────────────────────────────

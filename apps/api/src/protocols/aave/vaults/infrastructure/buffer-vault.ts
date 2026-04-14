@@ -89,6 +89,19 @@ export class InMemoryBufferVault implements BufferVaultPort {
     return results;
   }
 
+  async snapshotPositionsForMetrics(): Promise<{
+    aqAssets: AqAsset[];
+    collaterals: CollateralAsset[];
+  }> {
+    const aqAssets = [...this.aqAssets.values()];
+    const collaterals: CollateralAsset[] = [];
+    for (const aq of aqAssets) {
+      const c = this.collaterals.get(aq.id);
+      if (c) collaterals.push(c);
+    }
+    return { aqAssets, collaterals };
+  }
+
   // ── Diagnostics ──────────────────────────────────────────────────
 
   /** Total number of aqAssets in the vault (for testing/diagnostics). */

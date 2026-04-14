@@ -22,6 +22,10 @@ describe("Vault gateway", () => {
     };
     assert.equal(body.schemaVersion, 1);
     assert.equal(body.name, "aquarius-vault-gateway");
+    assert.equal(
+      (body as { disclosureKind?: string }).disclosureKind,
+      "advisory"
+    );
     assert.ok(Array.isArray(body.layers) && body.layers.length > 0);
     assert.ok(
       body.chains?.some((c) => c.id === "ethereum"),
@@ -46,6 +50,10 @@ describe("Vault gateway", () => {
     assert.equal(body.asset, "USDC");
     assert.ok(Array.isArray(body.sleeves) && body.sleeves.length >= 2);
     assert.ok(typeof body.disclaimer === "string");
+    assert.equal(
+      (body as { disclosureKind?: string }).disclosureKind,
+      "advisory"
+    );
   });
 
   it("normalizes 0g alias to og_chain", async () => {

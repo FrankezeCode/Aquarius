@@ -70,6 +70,7 @@ const TARGET_CONTRACTS = [
   "AquaAgent",
   "CCIPCoordinator",
   "AquariusPerChainVault",
+  "CuratedDelegationRouter",
 ];
 
 const artifacts: Record<string, { abi: any[]; bytecode: string }> = {};

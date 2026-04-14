@@ -10,15 +10,15 @@
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
-  runCREWorkflow,
-} from "../../../../../packages/domain/cre/run-cre-workflow.js";
-import {
   createMarketDataProvider,
   getTenderlyValidationError,
   resolveDataProviderMode,
 } from "../../adapters/providerFactory.js";
+import { getCreOrchestrationAdapter } from "../../infrastructure/orchestration/index.js";
 import { registerCREDemoRoutes } from "./demo.js";
 import { isAaveActiveChain, resolveAaveActiveChain } from "../v1/aave-risk/chain.js";
+
+const creOrchestration = getCreOrchestrationAdapter();
 
 export async function registerCRERoutes(
   app: FastifyInstance,
@@ -45,15 +45,25 @@ export async function registerCRERoutes(
 
     const provider = createMarketDataProvider();
 
-    const result = await runCREWorkflow({
-      provider,
-      chainId,
-      positionLimit: 50,
-      enableLLM: !!process.env.GROQ_API_KEY,
-      groqApiKey: process.env.GROQ_API_KEY,
+    const submitted = await creOrchestration.submitIntent({
+      type: "cre.workflow",
+      options: {
+        provider,
+        chainId,
+        positionLimit: 50,
+        enableLLM: !!process.env.GROQ_API_KEY,
+        groqApiKey: process.env.GROQ_API_KEY,
+      },
     });
 
-    return reply.status(200).send(result);
+    if (submitted.status === "failed" || !submitted.result) {
+      return reply.status(500).send({
+        error: "CRE_WORKFLOW_FAILED",
+        message: submitted.error ?? "CRE workflow did not return a result",
+      });
+    }
+
+    return reply.status(200).send(submitted.result);
   });
 
   await app.register(registerCREDemoRoutes);

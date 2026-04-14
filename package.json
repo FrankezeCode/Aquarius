@@ -18,7 +18,8 @@
     "run:confidential-validation": "tsx scripts/run-confidential-http-validation.ts",
     "run:local-cre-don-sim": "tsx scripts/run-confidential-http-validation.ts",
     "run:full-validation": "tsx scripts/run-full-validation.ts",
-    "compile:contracts": "tsx scripts/compile-contracts.ts"
+    "compile:contracts": "tsx scripts/compile-contracts.ts",
+    "delegate:testnet-smoke": "tsx scripts/delegate-testnet-smoke.ts"
   },
   "devDependencies": {
     "dotenv": "^17.3.1",

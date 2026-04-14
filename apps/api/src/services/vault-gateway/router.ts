@@ -1,28 +1,47 @@
-import type { IntegrationMaturity, RoutingRecommendation, StrategyKind, VaultSleeve } from "./types.js";
+import type {
+  DelegationExecution,
+  IntegrationMaturity,
+  RoutingRecommendation,
+  StrategyKind,
+  VaultSleeve,
+} from "./types.js";
+import { normalizeVaultAsset, normalizeVaultChain } from "./chain-normalize.js";
+import { loadConfig } from "../../config/index.js";
 
 const DISCLAIMER =
   "Advisory routing only. Availability, APY, lockups, and slashing depend on on-chain contracts and governance. Not financial advice.";
 
-const KNOWN_EVM_CHAINS = new Set(["ethereum", "polygon", "arbitrum"]);
-const OG_ALIASES = new Set(["0g", "og", "galileo", "og_chain", "zerog"]);
+const KNOWN_EVM_CHAINS = new Set([
+  "ethereum",
+  "polygon",
+  "arbitrum",
+  "sepolia",
+]);
 
-function normalizeChain(raw: string): string {
-  const c = raw.trim().toLowerCase();
-  if (OG_ALIASES.has(c)) return "og_chain";
-  return c;
-}
-
-function normalizeAsset(raw: string): string {
-  return raw.trim().toUpperCase();
+function delegationFlagForChain(chain: string): DelegationExecution {
+  const cfg = loadConfig();
+  if (chain === "og_chain") return "unavailable";
+  if (cfg.posDelegationEnabledChains.has(chain)) return "live_staged";
+  return "advisory";
 }
 
 function sleeveBlock(
+  chain: string,
   sleeve: VaultSleeve,
   kinds: StrategyKind[],
   maturity: IntegrationMaturity,
   notes: string
 ) {
-  return { sleeve, strategyKinds: kinds, maturity, notes };
+  const hasDelegation = kinds.includes("native_validator_delegation");
+  return {
+    sleeve,
+    strategyKinds: kinds,
+    maturity,
+    notes,
+    ...(hasDelegation
+      ? { delegationExecution: delegationFlagForChain(chain) }
+      : {}),
+  };
 }
 
 /**
@@ -33,8 +52,8 @@ export function resolveVaultRouting(
   chainRaw: string,
   assetRaw: string
 ): RoutingRecommendation {
-  const chain = normalizeChain(chainRaw);
-  const asset = normalizeAsset(assetRaw);
+  const chain = normalizeVaultChain(chainRaw);
+  const asset = normalizeVaultAsset(assetRaw);
 
   if (!asset || asset.length > 32) {
     throw new Error("Invalid asset symbol");
@@ -46,12 +65,14 @@ export function resolveVaultRouting(
       asset,
       sleeves: [
         sleeveBlock(
+          chain,
           "buffer_insurance",
           ["native_validator_delegation"],
           "advisory_schema_only",
           "Buffer sleeve on 0G: policy-gated liquidity; delegation subject to unbonding and slashing risk."
         ),
         sleeveBlock(
+          chain,
           "yield_seeker",
           ["native_validator_delegation", "protocol_incentives"],
           "advisory_schema_only",
@@ -75,12 +96,14 @@ export function resolveVaultRouting(
       asset,
       sleeves: [
         sleeveBlock(
+          chain,
           "buffer_insurance",
           ["lending_market"],
           "demo_simulation",
           "Buffer sleeve: stable lending venues (e.g. Aave-class) with conservative caps in production vaults."
         ),
         sleeveBlock(
+          chain,
           "yield_seeker",
           ["lending_market", "amm_liquidity", "protocol_incentives"],
           chain === "ethereum" ? "production_integrated" : "demo_simulation",
@@ -97,12 +120,14 @@ export function resolveVaultRouting(
       asset,
       sleeves: [
         sleeveBlock(
+          chain,
           "buffer_insurance",
           ["lending_market", "liquid_staking_token"],
           "demo_simulation",
           "Buffer sleeve: prefer liquid staking / lending with liquidity and depeg monitoring."
         ),
         sleeveBlock(
+          chain,
           "yield_seeker",
           [
             "liquid_staking_token",
@@ -123,12 +148,14 @@ export function resolveVaultRouting(
     asset,
     sleeves: [
       sleeveBlock(
+        chain,
         "buffer_insurance",
         ["lending_market"],
         "demo_simulation",
         "Generic buffer: prefer audited lending or stable strategies until asset-specific risk review."
       ),
       sleeveBlock(
+        chain,
         "yield_seeker",
         ["lending_market", "amm_liquidity", "protocol_incentives"],
         "advisory_schema_only",

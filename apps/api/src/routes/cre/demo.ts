@@ -13,7 +13,7 @@
  */
 
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { runCREWorkflow } from "../../../../../packages/domain/cre/run-cre-workflow.js";
+import { getCreOrchestrationAdapter } from "../../infrastructure/orchestration/index.js";
 import { TenderlyMarketDataProvider } from "../../adapters/tenderly/TenderlyMarketDataProvider.js";
 import { ForkController } from "../../infrastructure/tenderly/ForkController.js";
 import { CccExecutionAdapter } from "../../infrastructure/ccc/CccExecutionAdapter.js";
@@ -45,13 +45,24 @@ export async function registerCREDemoRoutes(
     const cccAdapter = new CccExecutionAdapter(rpcUrl, forkId);
 
     const demoStart = performance.now();
+    const orchestration = getCreOrchestrationAdapter();
 
     // Step 1: Baseline CRE
-    const baseline = await runCREWorkflow({
-      provider,
-      chainId: "ethereum",
-      positionLimit: 10,
+    const baselineSubmitted = await orchestration.submitIntent({
+      type: "cre.workflow",
+      options: {
+        provider,
+        chainId: "ethereum",
+        positionLimit: 10,
+      },
     });
+    if (baselineSubmitted.status !== "completed" || !baselineSubmitted.result) {
+      return reply.status(500).send({
+        error: "CRE_BASELINE_FAILED",
+        message: baselineSubmitted.error ?? "Baseline CRE workflow failed",
+      });
+    }
+    const baseline = baselineSubmitted.result;
 
     // Step 2: Snapshot
     let snapshotId: string | undefined;
@@ -86,11 +97,21 @@ export async function registerCREDemoRoutes(
     }
 
     // Step 4: Post-manipulation CRE
-    const postManip = await runCREWorkflow({
-      provider,
-      chainId: "ethereum",
-      positionLimit: 10,
+    const postSubmitted = await orchestration.submitIntent({
+      type: "cre.workflow",
+      options: {
+        provider,
+        chainId: "ethereum",
+        positionLimit: 10,
+      },
     });
+    if (postSubmitted.status !== "completed" || !postSubmitted.result) {
+      return reply.status(500).send({
+        error: "CRE_POST_MANIP_FAILED",
+        message: postSubmitted.error ?? "Post-manipulation CRE workflow failed",
+      });
+    }
+    const postManip = postSubmitted.result;
 
     // Step 5: CCC mitigation if needed
     let executionReport = null;
@@ -115,11 +136,21 @@ export async function registerCREDemoRoutes(
     }
 
     // Step 6: Final CRE
-    const final = await runCREWorkflow({
-      provider,
-      chainId: "ethereum",
-      positionLimit: 10,
+    const finalSubmitted = await orchestration.submitIntent({
+      type: "cre.workflow",
+      options: {
+        provider,
+        chainId: "ethereum",
+        positionLimit: 10,
+      },
     });
+    if (finalSubmitted.status !== "completed" || !finalSubmitted.result) {
+      return reply.status(500).send({
+        error: "CRE_FINAL_FAILED",
+        message: finalSubmitted.error ?? "Final CRE workflow failed",
+      });
+    }
+    const final = finalSubmitted.result;
 
     // Step 7: Revert fork
     if (snapshotId) {

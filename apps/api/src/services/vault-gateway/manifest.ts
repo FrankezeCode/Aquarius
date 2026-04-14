@@ -3,9 +3,13 @@
  * Describes trust boundaries; does not expose secrets.
  */
 
-import type { RegisteredChain } from "./types.js";
+import { loadConfig } from "../../config/index.js";
+import type {
+  DelegationExecution,
+  RegisteredChain,
+} from "./types.js";
 
-const DEFAULT_CHAINS: RegisteredChain[] = [
+const DEFAULT_CHAINS: Array<Omit<RegisteredChain, "delegationExecution">> = [
   {
     id: "ethereum",
     displayName: "Ethereum",
@@ -25,6 +29,12 @@ const DEFAULT_CHAINS: RegisteredChain[] = [
     maturity: "production_integrated",
   },
   {
+    id: "sepolia",
+    displayName: "Sepolia (testnet)",
+    evmChainId: 11155111,
+    maturity: "demo_simulation",
+  },
+  {
     id: "og_chain",
     displayName: "0G Chain (logical)",
     evmChainId: null,
@@ -32,8 +42,18 @@ const DEFAULT_CHAINS: RegisteredChain[] = [
   },
 ];
 
+function delegationExecutionForChain(chainId: string): DelegationExecution {
+  const cfg = loadConfig();
+  if (chainId === "og_chain") return "unavailable";
+  if (cfg.posDelegationEnabledChains.has(chainId)) return "live_staged";
+  return "advisory";
+}
+
 export function getRegisteredChains(): RegisteredChain[] {
-  return DEFAULT_CHAINS;
+  return DEFAULT_CHAINS.map((c) => ({
+    ...c,
+    delegationExecution: delegationExecutionForChain(c.id),
+  }));
 }
 
 export function getArchitectureManifest() {
@@ -70,6 +90,7 @@ export function getArchitectureManifest() {
       "Intelligence APIs do not custody private keys.",
       "Yield and staking execution are on-chain or user-wallet scoped.",
       "This manifest and routing endpoint are advisory; they do not guarantee venue availability.",
+      "Curated PoS delegation via the API is gated per chain (`delegationExecution`); operator keys are never exposed to clients.",
     ],
     chains: getRegisteredChains(),
   };

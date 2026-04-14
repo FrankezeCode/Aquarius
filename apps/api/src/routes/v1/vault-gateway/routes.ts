@@ -14,7 +14,16 @@ export async function registerVaultGatewayRoutes(
   _opts: FastifyPluginOptions
 ) {
   app.get("/manifest", async (_request, reply) => {
-    return reply.send(getArchitectureManifest());
+    const manifest = getArchitectureManifest();
+    const executionBackedDelegation = manifest.chains.some(
+      (c) => c.delegationExecution === "live_staged"
+    );
+    return reply.send({
+      ...manifest,
+      disclosureKind: "advisory" as const,
+      /** True when at least one registered chain has curated delegation execution enabled (Phase 7c). */
+      executionBackedDelegation,
+    });
   });
 
   app.get("/routing", async (request, reply) => {
@@ -29,7 +38,15 @@ export async function registerVaultGatewayRoutes(
 
     try {
       const result = resolveVaultRouting(parsed.data.chain, parsed.data.asset);
-      return reply.send(result);
+      const executionBackedDelegation = result.sleeves.some(
+        (s) => s.delegationExecution === "live_staged"
+      );
+      return reply.send({
+        ...result,
+        disclosureKind: "advisory" as const,
+        /** True when `native_validator_delegation` is live-staged for this chain in this deployment (Phase 7c). Routing remains advisory for APY/venue guarantees. */
+        executionBackedDelegation,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({

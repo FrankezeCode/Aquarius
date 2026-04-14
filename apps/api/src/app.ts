@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import { loadConfig } from "./config/index.js";
+import { registerPublicErrorHandler } from "./http/register-public-error-handler.js";
 import { registerCors } from "./middleware/cors.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
 import { registerProtocolRoutes } from "./routes/protocol/index.js";
@@ -28,6 +29,7 @@ export async function buildApp() {
       await scoped.register(registerProtocolRoutes, { prefix: "/protocol" });
       await scoped.register(registerV1Routes, {
         copilotRateLimitMax: config.rateLimitCopilotMax,
+        vaultGatewayRateLimitMax: config.rateLimitVaultGatewayIntentsMax,
       });
     },
     { prefix: "/api/v1" }
@@ -64,6 +66,8 @@ export async function buildApp() {
   );
 
   app.get("/health", async () => ({ status: "ok" }));
+
+  registerPublicErrorHandler(app);
 
   return app;
 }
