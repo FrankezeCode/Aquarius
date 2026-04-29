@@ -23,9 +23,11 @@ export interface CopilotResponse {
 }
 
 export function useRiskCopilot(params: {
-  protocol: "aave";
+  protocol: "aave" | "kamino";
   chain: string;
   walletAddress?: string;
+  /** Kamino: forwarded to /copilot/chat as snapshotContext. */
+  snapshotContext?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function useRiskCopilot(params: {
             protocol: params.protocol,
             chain: params.chain,
             walletAddress: params.walletAddress,
+            snapshotContext: params.snapshotContext,
             question: trimmed,
             conversation: nextConversation.slice(-8),
           }),
@@ -77,7 +80,7 @@ export function useRiskCopilot(params: {
         setIsLoading(false);
       }
     },
-    [conversation, params.chain, params.protocol, params.walletAddress]
+    [conversation, params.chain, params.protocol, params.walletAddress, params.snapshotContext]
   );
 
   const reset = useCallback(() => {

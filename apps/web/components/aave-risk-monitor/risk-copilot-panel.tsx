@@ -14,16 +14,22 @@ import { useRiskCopilot } from "@/lib/use-risk-copilot";
 import { cn } from "@/lib/utils";
 
 interface RiskCopilotPanelProps {
+  /** Defaults to `aave` (floating Aave terminal). Kamino passes `kamino`. */
+  protocol?: "aave" | "kamino";
   chain: string;
   walletAddress?: string;
+  /** Kamino obligation copilot injection text (shown read-only above the composer). */
+  snapshotPromptBlock?: string;
   className?: string;
   onClose?: () => void;
   autoFocusSignal?: number;
 }
 
 export function RiskCopilotPanel({
+  protocol = "aave",
   chain,
   walletAddress,
+  snapshotPromptBlock,
   className,
   onClose,
   autoFocusSignal,
@@ -32,9 +38,10 @@ export function RiskCopilotPanel({
   const [selectedMode, setSelectedMode] = useState("informational");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { ask, reset, isLoading, error, lastResponse } = useRiskCopilot({
-    protocol: "aave",
+    protocol,
     chain,
     walletAddress,
+    snapshotContext: snapshotPromptBlock,
   });
 
   useEffect(() => {
@@ -52,16 +59,13 @@ export function RiskCopilotPanel({
   return (
     <section
       className={cn("rounded-xl border border-slate-700/70 bg-[#0f1115] p-5 space-y-4", className)}
-      aria-label="Risk Copilot"
+      aria-label="Agent Endo"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-            Risk Co-Pilot
+            Agent Endo
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Context advisor.
-          </p>
         </div>
         <div className="w-[232px] min-w-0 space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
@@ -69,7 +73,7 @@ export function RiskCopilotPanel({
           </p>
           <Select value={selectedMode} onValueChange={setSelectedMode}>
             <SelectTrigger
-              aria-label="Risk co-pilot mode"
+              aria-label="Agent Endo mode"
               className="h-8 border-slate-700/70 bg-[#131722] px-2.5 text-[11px] text-slate-200 focus:ring-primary/40"
             >
               <SelectValue placeholder="Select mode" />
@@ -103,7 +107,7 @@ export function RiskCopilotPanel({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Collapse copilot"
+            aria-label="Collapse Agent Endo"
             className="rounded-md border border-border/70 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground"
           >
             Close
@@ -117,7 +121,9 @@ export function RiskCopilotPanel({
           <>
             {" · "}Wallet:{" "}
             <span className="font-mono text-muted-foreground/80">
-              {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              {protocol === "kamino" && walletAddress.length > 12
+                ? `${walletAddress.slice(0, 4)}\u2026${walletAddress.slice(-4)}`
+                : `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
             </span>
           </>
         ) : (
@@ -125,12 +131,27 @@ export function RiskCopilotPanel({
         )}
       </p>
 
+      {snapshotPromptBlock?.trim() ? (
+        <div className="rounded-lg border border-slate-700/50 bg-[#131722] p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Obligation snapshot (Agent Endo grounding)
+          </p>
+          <pre className="max-h-[min(240px,32vh)] overflow-y-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-200">
+            {snapshotPromptBlock}
+          </pre>
+        </div>
+      ) : null}
+
       <div className="space-y-3">
         <Textarea
           ref={textareaRef}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask: Why is my health factor dropping? What does CONFIRM stage mean for my position?"
+          placeholder={
+            protocol === "kamino"
+              ? "Ask: How does Kamino LTV relate to liquidation risk here? Why is escalation INFO?"
+              : "Ask: Why is my health factor dropping? What does CONFIRM stage mean for my position?"
+          }
           className="min-h-[96px] border-slate-700/80 bg-[#131722]"
           maxLength={600}
         />
@@ -140,7 +161,7 @@ export function RiskCopilotPanel({
             onClick={submit}
             disabled={isLoading || !question.trim()}
           >
-            {isLoading ? "Analyzing…" : "Ask Co-Pilot"}
+            {isLoading ? "Analyzing…" : "Ask Agent Endo"}
           </Button>
           <Button type="button" variant="ghost" onClick={reset} disabled={isLoading}>
             Reset

@@ -19,10 +19,27 @@ export class CopilotContextAssembler {
     protocol: CopilotProtocol;
     chain: CopilotChain;
     walletAddress?: string;
+    kaminoPromptContext?: string;
   }): Promise<CopilotDeterministicContext> {
     const { protocol, chain, walletAddress } = input;
-    const missingData: string[] = [];
     const contextTimestamp = Date.now();
+
+    if (protocol === "kamino") {
+      const missingData: string[] = [];
+      if (!walletAddress?.trim()) missingData.push("walletAddress");
+      const promptSlice = input.kaminoPromptContext?.trim()?.slice(0, 32_000);
+      if (!promptSlice) missingData.push("kaminoSnapshot");
+
+      return {
+        protocol,
+        chain,
+        contextTimestamp,
+        missingData,
+        ...(promptSlice ? { kaminoPromptContext: promptSlice } : {}),
+      };
+    }
+
+    const missingData: string[] = [];
 
     let protocolHealth: CopilotDeterministicContext["protocolHealth"];
     try {

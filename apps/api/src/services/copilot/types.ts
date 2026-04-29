@@ -1,5 +1,5 @@
-export type CopilotProtocol = "aave";
-export type CopilotChain = "ethereum" | "polygon";
+export type CopilotProtocol = "aave" | "kamino";
+export type CopilotChain = "ethereum" | "polygon" | "solana";
 
 export interface CopilotConversationTurn {
   role: "user" | "assistant";
@@ -10,6 +10,8 @@ export interface CopilotChatRequest {
   protocol: CopilotProtocol;
   chain: CopilotChain;
   walletAddress?: string;
+  /** Kamino: optional server-side snapshot / copilot-injection copy (from obligation read path). */
+  snapshotContext?: string;
   question: string;
   conversation?: CopilotConversationTurn[];
 }
@@ -53,6 +55,8 @@ export interface CopilotDeterministicContext {
     avgHealthFactor: number;
   };
   missingData: string[];
+  /** Additional structured text for Kamino/Solana copilot grounding. */
+  kaminoPromptContext?: string;
 }
 
 export interface CopilotAdvisoryResponse {

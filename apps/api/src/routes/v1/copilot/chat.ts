@@ -41,16 +41,29 @@ export function createCopilotChatRoute(opts?: {
         });
       }
 
-      const walletAddress = body.walletAddress
-        ? normalizeEthereumAddress(body.walletAddress)
-        : undefined;
-      const normalizedWalletAddress = walletAddress ?? undefined;
-
-      if (body.walletAddress && !walletAddress) {
-        return reply.status(400).send({
-          error: "Invalid wallet address",
-          message: "walletAddress must be a valid Ethereum address",
-        });
+      let normalizedWalletAddress: string | undefined;
+      if (body.walletAddress) {
+        if (body.protocol === "kamino") {
+          normalizedWalletAddress = body.walletAddress.trim();
+          if (
+            normalizedWalletAddress.length === 0 ||
+            normalizedWalletAddress.length > 100
+          ) {
+            return reply.status(400).send({
+              error: "Invalid wallet address",
+              message: "walletAddress must be a non-empty Solana owner key (max 100 chars).",
+            });
+          }
+        } else {
+          const walletAddress = normalizeEthereumAddress(body.walletAddress);
+          if (!walletAddress) {
+            return reply.status(400).send({
+              error: "Invalid wallet address",
+              message: "walletAddress must be a valid Ethereum address",
+            });
+          }
+          normalizedWalletAddress = walletAddress;
+        }
       }
 
       try {
@@ -58,6 +71,7 @@ export function createCopilotChatRoute(opts?: {
           protocol: body.protocol,
           chain: body.chain,
           walletAddress: normalizedWalletAddress,
+          kaminoPromptContext: body.snapshotContext,
         });
 
         const response = await advisoryAgent.advise({

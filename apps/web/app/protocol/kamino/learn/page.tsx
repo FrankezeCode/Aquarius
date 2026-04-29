@@ -13,7 +13,7 @@ export default function KaminoLearnPage() {
       <AquaLearnHero
         tagline="AQUA LEARN"
         programTitle="Kamino — curriculum preview"
-        description="Structured education for Kamino Lending on Solana: supply, borrow, LTV risk, and using Aquarius read-path intelligence. Full modules unlock as content ships."
+        description="Structured education for Kamino Lending on Solana: supply, borrow, LTV risk, and using Aquarius snapshot-based intelligence. Full modules unlock as content ships."
         logo={<KaminoLogo className="h-8 w-8 text-primary" />}
       />
 

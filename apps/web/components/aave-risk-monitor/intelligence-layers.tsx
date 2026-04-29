@@ -73,7 +73,7 @@ function LatencyCard({ label, ms }: { label: string; ms: number }) {
         {label}
       </span>
       <span className="text-sm font-mono tabular-nums text-muted-foreground font-medium">
-        {ms}ms
+        {ms >= 0 ? `${ms}ms` : "\u2014"}
       </span>
     </div>
   );

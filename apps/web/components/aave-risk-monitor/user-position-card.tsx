@@ -9,6 +9,8 @@ export interface UserPositionCardProps {
   category: "stable" | "watch" | "high_risk";
   reasoning: string;
   regime?: MarketRegime;
+  /** Shown as primary row label (default: Health Factor). Kamino uses Loan-to-value (UI). */
+  primaryMetricLabel?: string;
   healthFactor: string;
   healthFactorDirection: "up" | "down" | "neutral";
   liquidationDistance: string;
@@ -59,6 +61,7 @@ export function UserPositionCard({
   category,
   reasoning,
   regime,
+  primaryMetricLabel = "Health Factor",
   healthFactor,
   healthFactorDirection,
   liquidationDistance,
@@ -132,7 +135,7 @@ export function UserPositionCard({
         <div className="grid grid-cols-1 divide-y divide-border/30 rounded-lg border border-border/30 bg-[#0a0a0c] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:flex-col sm:justify-center sm:py-4 sm:text-center">
             <span className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground/50">
-              Health Factor
+              {primaryMetricLabel}
             </span>
             <p className="flex min-w-0 items-center justify-end gap-1 sm:mt-1.5 sm:justify-center">
               <span className="text-lg font-semibold tabular-nums text-foreground sm:text-xl">

@@ -1,7 +1,7 @@
 import type { CopilotDeterministicContext } from "./types.js";
 
 export const COPILOT_SYSTEM_PROMPT = `
-You are Aquarius Risk Co-Pilot in informational mode.
+You are Aquarius Agent Endo in informational mode (same agent identity on Aave-class EVM, Kamino on Solana, and other venues).
 
 You must ONLY reason from the provided deterministic context.
 You must NOT invent protocol metrics.

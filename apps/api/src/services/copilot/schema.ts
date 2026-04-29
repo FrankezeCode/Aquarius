@@ -10,8 +10,19 @@ const MAX_QUESTION_LENGTH = 600;
 const MAX_CONVERSATION_TURNS = 8;
 const MAX_TURN_CONTENT_LENGTH = 400;
 
-const VALID_PROTOCOLS: readonly CopilotProtocol[] = ["aave"];
-const VALID_CHAINS: readonly CopilotChain[] = ["ethereum", "polygon"];
+const VALID_PROTOCOLS: readonly CopilotProtocol[] = ["aave", "kamino"];
+const VALID_CHAINS: readonly CopilotChain[] = ["ethereum", "polygon", "solana"];
+const MAX_SNAPSHOT_CONTEXT = 32_000;
+
+function isValidProtocolChainPair(protocol: CopilotProtocol, chain: CopilotChain): boolean {
+  if (protocol === "aave") {
+    return chain === "ethereum" || chain === "polygon";
+  }
+  if (protocol === "kamino") {
+    return chain === "solana";
+  }
+  return false;
+}
 
 function isRole(value: string): value is CopilotConversationTurn["role"] {
   return value === "user" || value === "assistant";
@@ -33,6 +44,10 @@ export function parseCopilotChatRequest(input: unknown): CopilotChatRequest {
     throw new Error(`Unsupported chain "${String(body.chain ?? "")}".`);
   }
 
+  if (!isValidProtocolChainPair(protocol, chain)) {
+    throw new Error(`Unsupported protocol/chain pair: ${protocol} + ${chain}.`);
+  }
+
   const question = String(body.question ?? "").trim();
   if (!question) {
     throw new Error("Question is required.");
@@ -43,6 +58,19 @@ export function parseCopilotChatRequest(input: unknown): CopilotChatRequest {
 
   const walletAddress =
     typeof body.walletAddress === "string" ? body.walletAddress.trim() : undefined;
+
+  const rawSnapshot = body.snapshotContext;
+  let snapshotContext: string | undefined;
+  if (rawSnapshot !== undefined && rawSnapshot !== null) {
+    if (typeof rawSnapshot !== "string") {
+      throw new Error("snapshotContext must be a string when provided.");
+    }
+    const s = rawSnapshot.trim();
+    if (s.length > MAX_SNAPSHOT_CONTEXT) {
+      throw new Error(`snapshotContext exceeds ${MAX_SNAPSHOT_CONTEXT} characters.`);
+    }
+    snapshotContext = s || undefined;
+  }
 
   const rawConversation = Array.isArray(body.conversation) ? body.conversation : [];
   if (rawConversation.length > MAX_CONVERSATION_TURNS) {
@@ -74,6 +102,7 @@ export function parseCopilotChatRequest(input: unknown): CopilotChatRequest {
     protocol,
     chain,
     walletAddress: walletAddress || undefined,
+    snapshotContext,
     question,
     conversation,
   };
