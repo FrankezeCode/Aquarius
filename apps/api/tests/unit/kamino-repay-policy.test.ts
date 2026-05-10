@@ -21,6 +21,7 @@ function cfg(over: Partial<Config> = {}): Config {
     rateLimitCreMax: 30,
     rateLimitKaminoWriteMax: 24,
     solanaRpcUrl: "https://example.com",
+    solanaRpcFallbackUrl: undefined,
     solanaCluster: "devnet",
     kaminoDefaultMarketPubkey: undefined,
     kaminoReadEnabled: true,

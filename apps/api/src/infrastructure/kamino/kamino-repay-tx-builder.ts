@@ -13,7 +13,8 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import type { Config } from "../../config/index.js";
-import { getSolanaRpcForUrl } from "./solana-rpc.js";
+import { recordKaminoFallbackActivation } from "../../observability/domain-metrics.js";
+import { pickSolanaRpc, recordSolanaRpcOutcome } from "./solana-rpc.js";
 import { withTimeout, TimeoutError } from "./timeout.js";
 import { kitInstructionsToWeb3 } from "./kit-instruction-to-web3.js";
 
@@ -60,9 +61,23 @@ export async function buildKaminoRepayVersionedTransaction(
     };
   }
 
-  const rpcUrl = config.solanaRpcUrl;
-  const rpc = getSolanaRpcForUrl(rpcUrl);
+  const selection = pickSolanaRpc({
+    primaryUrl: config.solanaRpcUrl,
+    fallbackUrl: config.solanaRpcFallbackUrl,
+    failureThreshold: config.kaminoCircuitFailureThreshold,
+    circuitOpenMs: config.kaminoCircuitOpenMs,
+  });
+  if (selection.provider === "fallback") {
+    recordKaminoFallbackActivation();
+  }
+  const rpcUrl = selection.url;
+  const rpc = selection.rpc;
   const connection = new Connection(rpcUrl, "confirmed");
+
+  const providerOutcomeOpts = {
+    failureThreshold: config.kaminoCircuitFailureThreshold,
+    circuitOpenMs: config.kaminoCircuitOpenMs,
+  } as const;
 
   const { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID } =
     await import("@kamino-finance/klend-sdk");
@@ -170,6 +185,7 @@ export async function buildKaminoRepayVersionedTransaction(
 
     const versionedTransaction = new VersionedTransaction(messageV0);
 
+    recordSolanaRpcOutcome(selection, true, providerOutcomeOpts);
     return {
       ok: true,
       connection,
@@ -178,12 +194,16 @@ export async function buildKaminoRepayVersionedTransaction(
     };
   } catch (e) {
     if (e instanceof TimeoutError) {
+      recordSolanaRpcOutcome(selection, false, providerOutcomeOpts);
       return { ok: false, code: "TIMEOUT", message: e.message };
     }
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("buildRepayTxns") || msg.includes("addSupportIxs")) {
+      // Logical build failure (SDK couldn't shape the tx) — not an RPC fault.
+      recordSolanaRpcOutcome(selection, true, providerOutcomeOpts);
       return { ok: false, code: "BUILD_FAILED", message: msg };
     }
+    recordSolanaRpcOutcome(selection, false, providerOutcomeOpts);
     return {
       ok: false,
       code: "BUILD_FAILED",

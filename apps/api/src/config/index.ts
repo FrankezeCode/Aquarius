@@ -35,6 +35,10 @@
  *
  * Kamino / Solana (read path):
  * - SOLANA_RPC_URL — HTTPS RPC URL (optional; required for live Kamino reads)
+ * - SOLANA_RPC_URL_FALLBACK — optional secondary RPC URL used while the
+ *   primary provider circuit is open. Should target the SAME cluster as
+ *   SOLANA_RPC_URL. Recommended for production: a different provider
+ *   (e.g. Alchemy as fallback for RPC Fast) for outage independence.
  * - SOLANA_CLUSTER — mainnet-beta | devnet | testnet (default: mainnet-beta)
  * - KAMINO_MARKET_PUBKEY — optional default lending market (base58)
  * - SOLANA_RPC_TIMEOUT_MS — per-RPC-call timeout (default: 12000)
@@ -296,6 +300,8 @@ export function loadConfig() {
     bufferUsdPerUnitOverrides: parseBufferUsdPerUnitOverrides(),
 
     solanaRpcUrl: process.env.SOLANA_RPC_URL?.trim() || undefined,
+    solanaRpcFallbackUrl:
+      process.env.SOLANA_RPC_URL_FALLBACK?.trim() || undefined,
     solanaCluster: parseSolanaCluster(),
     kaminoDefaultMarketPubkey:
       process.env.KAMINO_MARKET_PUBKEY?.trim() || undefined,

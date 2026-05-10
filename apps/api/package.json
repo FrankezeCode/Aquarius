@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --env-file=../../.env src/server.ts",
     "start": "node dist/apps/api/src/server.js",
     "test": "cross-env NODE_ENV=test node --import tsx --test tests/**/*.test.ts",
     "lint": "node scripts/check-domain-boundaries.mjs",

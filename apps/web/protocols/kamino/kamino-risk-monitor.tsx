@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   RiskFactorCards,
@@ -27,12 +27,17 @@ import {
 } from "@/components/kamino/kamino-workflow-rail";
 import { KaminoAgentEmploymentCta } from "@/components/kamino/kamino-agent-employment-cta";
 import {
-  connectPhantomSolanaWallet,
-  disconnectPhantomSolanaWallet,
-  isPhantomBrowserWalletAvailable,
-  PhantomNotInstalledError,
-  PhantomRejectedError,
-} from "@/adapters/kamino-solana/phantom-wallet";
+  connectSolanaWallet,
+  detectInstalledSolanaWallets,
+  disconnectSolanaWallet,
+  getSolanaWalletLabel,
+  isSolanaWalletKind,
+  SolanaWalletNotInstalledError,
+  SolanaWalletNotTrustedError,
+  SolanaWalletRejectedError,
+  subscribeToSolanaWalletEvents,
+  type SolanaWalletKind,
+} from "@/adapters/kamino-solana/solana-wallet";
 import { Button } from "@/components/ui/button";
 import {
   getKaminoHealthBreakdown,
@@ -43,6 +48,36 @@ import {
 } from "@/lib/kamino/kamino-snapshot";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+/** localStorage key for last successfully connected wallet kind. */
+const WALLET_KIND_STORAGE_KEY = "aquarius:kamino:walletKind";
+
+/** Default refresh interval for connected-wallet polling (30s). */
+const DEFAULT_REFRESH_MS = 30_000;
+/** Floor for refresh interval — protects API rate limits. */
+const MIN_REFRESH_MS = 5_000;
+
+/** Where to send users when their selected wallet isn't installed. */
+const WALLET_INSTALL_URLS: Record<SolanaWalletKind, string> = {
+  phantom: "https://phantom.app/download",
+  backpack: "https://backpack.app/downloads",
+};
+
+const REFRESH_MS = (() => {
+  const raw = process.env.NEXT_PUBLIC_KAMINO_REFRESH_MS;
+  if (!raw) return DEFAULT_REFRESH_MS;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < MIN_REFRESH_MS) return DEFAULT_REFRESH_MS;
+  return parsed;
+})();
+
+/**
+ * Browser-side cluster pin. When set, the UI compares it with the
+ * cluster reported by the API in `snapshot.metadata.solanaCluster` and
+ * surfaces a banner on mismatch (common foot-gun: wallet on mainnet,
+ * API serving devnet).
+ */
+const BROWSER_CLUSTER = (process.env.NEXT_PUBLIC_SOLANA_CLUSTER ?? "").trim() || null;
 
 type SnapshotSource = "mock" | "live" | null;
 
@@ -229,6 +264,28 @@ function computeWorkflowHighlight(
   return "review";
 }
 
+/** Normalize cluster aliases for the mismatch banner comparison. */
+function normalizeCluster(c: string | null | undefined): string | null {
+  if (!c) return null;
+  const x = c.trim().toLowerCase();
+  if (!x) return null;
+  if (x === "mainnet" || x === "mainnet-beta" || x === "mb") return "mainnet-beta";
+  if (x === "devnet" || x === "dev") return "devnet";
+  if (x === "testnet" || x === "test") return "testnet";
+  return x;
+}
+
+function formatRelativeAge(fromMs: number, nowMs: number): string {
+  const delta = Math.max(0, nowMs - fromMs);
+  if (delta < 5_000) return "just now";
+  const sec = Math.round(delta / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  return `${hr}h ago`;
+}
+
 export function KaminoRiskMonitor() {
   const mockEnv = isKaminoMockDashboardEnabled();
 
@@ -236,6 +293,9 @@ export function KaminoRiskMonitor() {
   const [market, setMarket] = useState("");
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
   const [result, setResult] = useState<KaminoSnapshotResponse | null>(null);
   const [snapshotSource, setSnapshotSource] = useState<SnapshotSource>(null);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -243,38 +303,97 @@ export function KaminoRiskMonitor() {
   /** When live mode (`!mockEnv`), panel starts open until a snapshot loads successfully. */
   const [liveApiOpen, setLiveApiOpen] = useState(() => true);
 
-  const [phantomAvailable, setPhantomAvailable] = useState(false);
-  const [phantomLinked, setPhantomLinked] = useState(false);
+  const [installedWallets, setInstalledWallets] = useState<readonly SolanaWalletKind[]>(
+    [],
+  );
+  const [activeWalletKind, setActiveWalletKind] = useState<SolanaWalletKind | null>(
+    null,
+  );
   const [demoWallet, setDemoWallet] = useState(false);
-  const [solConnecting, setSolConnecting] = useState(false);
+  const [connectingKind, setConnectingKind] = useState<SolanaWalletKind | null>(null);
   const [walletConnectErr, setWalletConnectErr] = useState<string | null>(null);
 
-  const walletLinked = phantomLinked || demoWallet;
+  const realWalletLinked = activeWalletKind !== null;
+  const walletLinked = realWalletLinked || demoWallet;
 
+  /** Tracks in-flight refresh number so out-of-order responses are dropped. */
+  const fetchSeqRef = useRef(0);
+
+  // Detect installed wallets on mount. Browser extensions don't all inject at
+  // the same moment — Phantom, Backpack, Solflare, Brave and the Wallet
+  // Standard registration races are notoriously timing-sensitive — so we:
+  //   (a) re-poll on a back-off ladder to catch late-injecting providers,
+  //   (b) listen to the Wallet Standard `register-wallet` event so wallets
+  //       that announce themselves via that channel update the list live,
+  //   (c) re-detect whenever the window regains focus (the user often
+  //       unlocks the extension in another popup, then comes back).
   useEffect(() => {
-    setPhantomAvailable(isPhantomBrowserWalletAvailable());
+    if (typeof window === "undefined") return;
+    const detect = () =>
+      setInstalledWallets((prev) => {
+        const next = detectInstalledSolanaWallets();
+        if (
+          prev.length === next.length &&
+          prev.every((k, i) => k === next[i])
+        ) {
+          return prev;
+        }
+        return next;
+      });
+
+    detect();
+    const timeouts = [200, 500, 1500, 3000].map((ms) =>
+      window.setTimeout(detect, ms),
+    );
+
+    const onWalletRegister: EventListener = () => detect();
+    window.addEventListener("wallet-standard:register-wallet", onWalletRegister);
+
+    const onFocus = () => detect();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      for (const t of timeouts) window.clearTimeout(t);
+      window.removeEventListener(
+        "wallet-standard:register-wallet",
+        onWalletRegister,
+      );
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   useEffect(() => {
     if (!mockEnv) return;
     setResult(MOCK_KAMINO_SNAPSHOT_RESPONSE);
     setSnapshotSource("mock");
+    setLastUpdatedAt(Date.now());
     setWallet(MOCK_KAMINO_SNAPSHOT_RESPONSE.snapshot.wallet);
     setMarket(MOCK_KAMINO_SNAPSHOT_RESPONSE.snapshot.marketPubkey);
   }, [mockEnv]);
 
   const fetchSnapshot = useCallback(
-    async (e?: FormEvent, walletOverride?: string) => {
+    async (
+      e?: FormEvent,
+      walletOverride?: string,
+      opts: { silent?: boolean } = {},
+    ) => {
       e?.preventDefault();
+      const w = (walletOverride ?? wallet).trim();
+      if (!w) return;
+      const seq = ++fetchSeqRef.current;
       setFetchErr(null);
-      setLoading(true);
+      if (opts.silent) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       try {
-        const w = (walletOverride ?? wallet).trim();
         const q = new URLSearchParams({ wallet: w });
         if (market.trim()) q.set("market", market.trim());
         if (policy.trim()) q.set("policy", policy.trim());
         const res = await fetch(`${API_BASE}/api/v1/kamino-risk/snapshot?${q}`);
         const json: unknown = await res.json();
+        if (seq !== fetchSeqRef.current) return;
         if (!res.ok) {
           const body = json as ErrorBody;
           setFetchErr(
@@ -289,44 +408,62 @@ export function KaminoRiskMonitor() {
         }
         setResult(parsed.data);
         setSnapshotSource("live");
+        setLastUpdatedAt(Date.now());
         setLiveApiOpen(false);
       } catch (caught) {
+        if (seq !== fetchSeqRef.current) return;
         setFetchErr(caught instanceof Error ? caught.message : "Request failed.");
       } finally {
-        setLoading(false);
+        if (seq === fetchSeqRef.current) {
+          if (opts.silent) setIsRefreshing(false);
+          else setLoading(false);
+        }
       }
     },
     [market, policy, wallet],
   );
 
-  const handleConnectPhantom = useCallback(async () => {
-    setWalletConnectErr(null);
-    setSolConnecting(true);
-    try {
-      const addr = await connectPhantomSolanaWallet();
-      setPhantomLinked(true);
-      setDemoWallet(false);
-      setWallet(addr);
-      if (!mockEnv) {
-        await fetchSnapshot(undefined, addr);
+  const handleConnectWallet = useCallback(
+    async (kind: SolanaWalletKind) => {
+      setWalletConnectErr(null);
+      setConnectingKind(kind);
+      try {
+        const { address } = await connectSolanaWallet(kind);
+        setActiveWalletKind(kind);
+        setDemoWallet(false);
+        setWallet(address);
+        try {
+          window.localStorage?.setItem(WALLET_KIND_STORAGE_KEY, kind);
+        } catch {
+          // localStorage may be unavailable (privacy mode) — non-fatal.
+        }
+        if (!mockEnv) {
+          await fetchSnapshot(undefined, address);
+        }
+      } catch (e) {
+        if (e instanceof SolanaWalletRejectedError) {
+          setWalletConnectErr("Connection was cancelled.");
+        } else if (e instanceof SolanaWalletNotInstalledError) {
+          const label = getSolanaWalletLabel(e.kind);
+          setWalletConnectErr(
+            `${label} is not detected in this browser. Install it from ${WALLET_INSTALL_URLS[e.kind]}, unlock the extension, then reload this page.`,
+          );
+        } else {
+          setWalletConnectErr(
+            e instanceof Error ? e.message : "Connection failed.",
+          );
+        }
+      } finally {
+        setConnectingKind(null);
       }
-    } catch (e) {
-      if (e instanceof PhantomRejectedError) {
-        setWalletConnectErr("Connection was cancelled.");
-      } else if (e instanceof PhantomNotInstalledError) {
-        setWalletConnectErr("Phantom is not available.");
-      } else {
-        setWalletConnectErr(e instanceof Error ? e.message : "Connection failed.");
-      }
-    } finally {
-      setSolConnecting(false);
-    }
-  }, [fetchSnapshot, mockEnv]);
+    },
+    [fetchSnapshot, mockEnv],
+  );
 
   const handleUseDemoWallet = useCallback(() => {
     setWalletConnectErr(null);
     setDemoWallet(true);
-    setPhantomLinked(false);
+    setActiveWalletKind(null);
     const { wallet: mw, marketPubkey: mm } = MOCK_KAMINO_SNAPSHOT_RESPONSE.snapshot;
     setWallet(mw);
     setMarket(mm);
@@ -334,14 +471,15 @@ export function KaminoRiskMonitor() {
 
   const handleDisconnectWallet = useCallback(async () => {
     setWalletConnectErr(null);
-    if (phantomLinked && !demoWallet) {
-      try {
-        await disconnectPhantomSolanaWallet();
-      } catch {
-        // ignore disconnect noise
-      }
+    if (activeWalletKind) {
+      await disconnectSolanaWallet(activeWalletKind);
     }
-    setPhantomLinked(false);
+    try {
+      window.localStorage?.removeItem(WALLET_KIND_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setActiveWalletKind(null);
     setDemoWallet(false);
     if (mockEnv) {
       setWallet(MOCK_KAMINO_SNAPSHOT_RESPONSE.snapshot.wallet);
@@ -349,13 +487,141 @@ export function KaminoRiskMonitor() {
     } else {
       setWallet("");
       setMarket("");
+      setResult(null);
+      setSnapshotSource(null);
+      setLastUpdatedAt(null);
     }
-  }, [demoWallet, mockEnv, phantomLinked]);
+  }, [activeWalletKind, mockEnv]);
+
+  const handleManualRefresh = useCallback(() => {
+    if (!wallet || mockEnv) return;
+    void fetchSnapshot(undefined, undefined, { silent: true });
+  }, [fetchSnapshot, mockEnv, wallet]);
+
+  // Silent reconnect on mount: if the user previously connected a real wallet
+  // and that provider is installed in this browser, ask the wallet to reconnect
+  // without prompting (`onlyIfTrusted: true`). Failure is silent — the user
+  // can always click Connect manually.
+  useEffect(() => {
+    if (mockEnv) return;
+    if (typeof window === "undefined") return;
+    if (activeWalletKind !== null) return;
+    if (installedWallets.length === 0) return;
+
+    let persisted: string | null = null;
+    try {
+      persisted = window.localStorage?.getItem(WALLET_KIND_STORAGE_KEY) ?? null;
+    } catch {
+      persisted = null;
+    }
+    if (!isSolanaWalletKind(persisted)) return;
+    if (!installedWallets.includes(persisted)) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { address, kind } = await connectSolanaWallet(persisted, {
+          onlyIfTrusted: true,
+        });
+        if (cancelled) return;
+        setActiveWalletKind(kind);
+        setDemoWallet(false);
+        setWallet(address);
+        await fetchSnapshot(undefined, address);
+      } catch (e) {
+        if (e instanceof SolanaWalletNotTrustedError) return;
+        // Any other failure here is silent — the connect CTA stays visible.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWalletKind, fetchSnapshot, installedWallets, mockEnv]);
+
+  // Wire wallet-side events (account change, disconnect from extension).
+  useEffect(() => {
+    if (!activeWalletKind) return;
+    const unsubscribe = subscribeToSolanaWalletEvents(activeWalletKind, {
+      onAccountChanged: (next) => {
+        if (!next) {
+          // Account cleared inside the wallet — treat as a disconnect.
+          void handleDisconnectWallet();
+          return;
+        }
+        setWallet(next);
+        if (!mockEnv) {
+          void fetchSnapshot(undefined, next);
+        }
+      },
+      onDisconnect: () => {
+        void handleDisconnectWallet();
+      },
+    });
+    return unsubscribe;
+  }, [activeWalletKind, fetchSnapshot, handleDisconnectWallet, mockEnv]);
+
+  // Live monitoring: poll the snapshot while a real wallet is connected.
+  // Pauses when the tab is hidden; resumes (with an immediate refresh) on
+  // visibility regain.
+  useEffect(() => {
+    if (mockEnv) return;
+    if (!realWalletLinked) return;
+    if (typeof document === "undefined") return;
+
+    let intervalId: number | null = null;
+
+    const start = () => {
+      if (intervalId !== null) return;
+      intervalId = window.setInterval(() => {
+        if (document.visibilityState !== "visible") return;
+        void fetchSnapshot(undefined, undefined, { silent: true });
+      }, REFRESH_MS);
+    };
+    const stop = () => {
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchSnapshot(undefined, undefined, { silent: true });
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [fetchSnapshot, mockEnv, realWalletLinked]);
+
+  // Ticker for "last updated Ns ago" — only runs when something to display.
+  useEffect(() => {
+    if (lastUpdatedAt === null) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(id);
+  }, [lastUpdatedAt]);
 
   const clusterLabel = useMemo(() => {
     const c = result?.snapshot.metadata.solanaCluster;
     return c ? c.replace("-beta", "") : null;
   }, [result]);
+
+  const clusterMismatch = useMemo(() => {
+    if (snapshotSource !== "live") return null;
+    const ui = normalizeCluster(BROWSER_CLUSTER);
+    const api = normalizeCluster(result?.snapshot.metadata.solanaCluster);
+    if (!ui || !api || ui === api) return null;
+    return { ui, api };
+  }, [result, snapshotSource]);
 
   const healthBreakdown = useMemo(() => {
     if (!result) return undefined;
@@ -384,6 +650,25 @@ export function KaminoRiskMonitor() {
               </span>
             </div>
           </div>
+
+          {clusterMismatch ? (
+            <div
+              role="alert"
+              className="mx-auto max-w-2xl rounded-md border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-center text-xs text-amber-200"
+            >
+              <strong className="font-semibold">Cluster mismatch.</strong> Browser
+              is configured for{" "}
+              <code className="rounded bg-amber-900/40 px-1 py-0.5 font-mono">
+                {clusterMismatch.ui}
+              </code>{" "}
+              but the API is serving snapshots from{" "}
+              <code className="rounded bg-amber-900/40 px-1 py-0.5 font-mono">
+                {clusterMismatch.api}
+              </code>
+              . Verify your wallet, the API <code>SOLANA_CLUSTER</code>, and{" "}
+              <code>KAMINO_MARKET_PUBKEY</code> all point at the same network.
+            </div>
+          ) : null}
 
           {loading && !result ? (
             <div className="rounded-xl border border-border bg-card/50 py-24 flex flex-col items-center justify-center gap-4">
@@ -486,19 +771,63 @@ export function KaminoRiskMonitor() {
                       Demo wallet
                     </p>
                   ) : (
-                    <p className="break-all px-4 font-mono text-xs text-muted-foreground max-w-xl">
-                      {wallet || result.snapshot.wallet}
-                    </p>
+                    <>
+                      {activeWalletKind ? (
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {getSolanaWalletLabel(activeWalletKind)}
+                        </p>
+                      ) : null}
+                      <p className="break-all px-4 font-mono text-xs text-muted-foreground max-w-xl">
+                        {wallet || result.snapshot.wallet}
+                      </p>
+                    </>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => void handleDisconnectWallet()}
-                  >
-                    Disconnect wallet
-                  </Button>
+                  {realWalletLinked && lastUpdatedAt !== null ? (
+                    <p
+                      className="flex items-center gap-2 text-[11px] text-muted-foreground"
+                      aria-live="polite"
+                    >
+                      {isRefreshing ? (
+                        <span
+                          className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className="inline-block h-2 w-2 rounded-full bg-emerald-500/80"
+                          aria-hidden
+                        />
+                      )}
+                      <span>
+                        {isRefreshing
+                          ? "Refreshing…"
+                          : `Updated ${formatRelativeAge(lastUpdatedAt, now)}`}
+                      </span>
+                    </p>
+                  ) : null}
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {realWalletLinked ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground"
+                        onClick={handleManualRefresh}
+                        disabled={isRefreshing || loading}
+                      >
+                        Refresh now
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground"
+                      onClick={() => void handleDisconnectWallet()}
+                    >
+                      Disconnect wallet
+                    </Button>
+                  </div>
                 </div>
                 <UserPositionCard
                   score={Math.round(result.snapshot.riskScore)}
@@ -523,9 +852,9 @@ export function KaminoRiskMonitor() {
                   </p>
                 ) : null}
                 <ConnectSolanaWalletCta
-                  phantomAvailable={phantomAvailable}
-                  isConnecting={solConnecting}
-                  onConnect={handleConnectPhantom}
+                  installedWallets={installedWallets}
+                  connectingKind={connectingKind}
+                  onConnect={handleConnectWallet}
                   onSimulateDemoWallet={handleUseDemoWallet}
                 />
               </div>

@@ -49,6 +49,7 @@ In honor of **[Miki Endo](https://en.wikipedia.org/wiki/Miki_Endo)**.
 
 - [Aquarius Risk Intelligence Protocol (AQUARIUS)](#aquarius-risk-intelligence-protocol-aquarius)
   - [Table of Contents](#table-of-contents)
+  - [Hackathon Submissions](#hackathon-submissions)
   - [Problem \& approach](#problem--approach)
     - [Overview](#overview)
     - [What Problem Aquarius Solves](#what-problem-aquarius-solves)
@@ -121,6 +122,16 @@ In honor of **[Miki Endo](https://en.wikipedia.org/wiki/Miki_Endo)**.
     - [Dedication](#dedication)
     - [Fun Fact 😀](#fun-fact-)
       - [Meaning of Names We Chose for This Project and Why](#meaning-of-names-we-chose-for-this-project-and-why)
+
+## Hackathon Submissions
+
+Aquarius has been refined across multiple hackathons. Each event has its own dedicated, judge-focused submission overview — the main README below remains the canonical technical document.
+
+| Hackathon | Submission Page | Focus |
+|---|---|---|
+| Chainlink Convergence | [View Submission Overview](docs/hackathons/chainlink-convergence.md) | CRE, CCIP, orchestration, controlled execution |
+| 0G APAC | [View Submission Overview](docs/hackathons/0g-apac.md) | 0G data infrastructure, AI risk pipeline, decentralized intelligence |
+| Colosseum Frontier | [View Submission Overview](docs/hackathons/colosseum-frontier.md) | Solana, Kamino, wallet-native risk intelligence |
 
 ## Problem & approach
 

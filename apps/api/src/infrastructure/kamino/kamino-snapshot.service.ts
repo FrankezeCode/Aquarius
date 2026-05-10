@@ -16,11 +16,12 @@ import {
   setCachedSnapshot,
 } from "./kamino-snapshot-stale-cache.js";
 import {
+  recordKaminoFallbackActivation,
   recordKaminoRpcError,
   recordKaminoRpcLatency,
 } from "../../observability/domain-metrics.js";
 import { createCircuitBreaker, CircuitOpenError } from "./circuit-breaker.js";
-import { getSolanaRpcForUrl } from "./solana-rpc.js";
+import { pickSolanaRpc, recordSolanaRpcOutcome } from "./solana-rpc.js";
 import { withTimeout, TimeoutError } from "./timeout.js";
 
 export type KaminoSnapshotFailureCode =
@@ -85,7 +86,16 @@ export async function fetchKaminoRiskSnapshot(input: {
   }
 
   const cluster = config.solanaCluster as KaminoCluster;
-  const rpc = getSolanaRpcForUrl(config.solanaRpcUrl);
+  const selection = pickSolanaRpc({
+    primaryUrl: config.solanaRpcUrl,
+    fallbackUrl: config.solanaRpcFallbackUrl,
+    failureThreshold: config.kaminoCircuitFailureThreshold,
+    circuitOpenMs: config.kaminoCircuitOpenMs,
+  });
+  if (selection.provider === "fallback") {
+    recordKaminoFallbackActivation();
+  }
+  const rpc = selection.rpc;
   const owner = address(wallet);
 
   const run = async () => {
@@ -115,7 +125,10 @@ export async function fetchKaminoRiskSnapshot(input: {
     );
 
     if (!obligation) {
-      recordKaminoRpcLatency(Math.round(performance.now() - t0));
+      recordKaminoRpcLatency(
+        Math.round(performance.now() - t0),
+        selection.provider
+      );
       throw new KaminoSnapshotError(
         "OBLIGATION_NOT_FOUND",
         "No vanilla Kamino lending obligation found for this wallet on this market."
@@ -130,22 +143,41 @@ export async function fetchKaminoRiskSnapshot(input: {
       cluster,
     });
 
-    recordKaminoRpcLatency(Math.round(performance.now() - t0));
+    recordKaminoRpcLatency(
+      Math.round(performance.now() - t0),
+      selection.provider
+    );
     setCachedSnapshot(wallet, marketPubkey, snapshot);
     return snapshot;
   };
 
+  const providerOutcomeOpts = {
+    failureThreshold: config.kaminoCircuitFailureThreshold,
+    circuitOpenMs: config.kaminoCircuitOpenMs,
+  } as const;
+
   try {
-    return await getBreaker(config).execute(run);
+    const result = await getBreaker(config).execute(() =>
+      withTimeout(
+        run(),
+        config.kaminoRpcTimeoutMs,
+        "fetchKaminoRiskSnapshot"
+      )
+    );
+    recordSolanaRpcOutcome(selection, true, providerOutcomeOpts);
+    return result;
   } catch (e) {
     if (e instanceof KaminoSnapshotError) {
-      if (shouldCountAsRpcFailure(e.code)) {
-        recordKaminoRpcError();
+      const isRpcFailure = shouldCountAsRpcFailure(e.code);
+      if (isRpcFailure) {
+        recordKaminoRpcError(selection.provider);
       }
+      recordSolanaRpcOutcome(selection, !isRpcFailure, providerOutcomeOpts);
       throw e;
     }
     if (e instanceof CircuitOpenError) {
-      recordKaminoRpcError();
+      recordKaminoRpcError(selection.provider);
+      recordSolanaRpcOutcome(selection, false, providerOutcomeOpts);
       throw new KaminoSnapshotError(
         "CIRCUIT_OPEN",
         e.message,
@@ -153,13 +185,15 @@ export async function fetchKaminoRiskSnapshot(input: {
       );
     }
     if (e instanceof TimeoutError) {
-      recordKaminoRpcError();
+      recordKaminoRpcError(selection.provider);
+      recordSolanaRpcOutcome(selection, false, providerOutcomeOpts);
       throw new KaminoSnapshotError(
         "TIMEOUT",
         "Solana RPC request timed out."
       );
     }
-    recordKaminoRpcError();
+    recordKaminoRpcError(selection.provider);
+    recordSolanaRpcOutcome(selection, false, providerOutcomeOpts);
     const msg = e instanceof Error ? e.message : "Solana RPC error";
     throw new KaminoSnapshotError("RPC_ERROR", msg);
   }
