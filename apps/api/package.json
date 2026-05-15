@@ -9,7 +9,10 @@
     "start": "node dist/apps/api/src/server.js",
     "test": "cross-env NODE_ENV=test node --import tsx --test tests/**/*.test.ts",
     "lint": "node scripts/check-domain-boundaries.mjs",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "0g:chain:deploy": "tsx --env-file=../../.env scripts/0g-chain-anchor.ts deploy",
+    "0g:chain:deploy:testnet": "cross-env OGF_NETWORK=testnet tsx --env-file=../../.env scripts/0g-chain-anchor.ts deploy",
+    "0g:chain:deploy:mainnet": "cross-env OGF_NETWORK=mainnet tsx --env-file=../../.env scripts/0g-chain-anchor.ts deploy"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",

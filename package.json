@@ -19,6 +19,9 @@
     "run:local-cre-don-sim": "tsx scripts/run-confidential-http-validation.ts",
     "run:full-validation": "tsx scripts/run-full-validation.ts",
     "compile:contracts": "tsx scripts/compile-contracts.ts",
+    "0g:chain:deploy": "pnpm --filter api exec tsx --env-file=../../.env scripts/0g-chain-anchor.ts deploy",
+    "0g:chain:deploy:testnet": "pnpm --filter api run 0g:chain:deploy:testnet",
+    "0g:chain:deploy:mainnet": "pnpm --filter api run 0g:chain:deploy:mainnet",
     "delegate:testnet-smoke": "tsx scripts/delegate-testnet-smoke.ts"
   },
   "devDependencies": {

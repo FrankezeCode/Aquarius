@@ -129,7 +129,7 @@ Aquarius has been refined across multiple hackathons. Each event has its own ded
 
 | Hackathon | Submission Page | Focus |
 |---|---|---|
-| Chainlink Convergence | [View Submission Overview](docs/hackathons/chainlink-convergence.md) | CRE, CCIP, orchestration, controlled execution |
+| Chainlink Convergence [online submisson](https://chain.link/hack-26/projects/aquarius)| [View Submission Overview](docs/hackathons/chainlink-convergence.md) | CRE, CCIP, orchestration, controlled execution |
 | 0G APAC | [View Submission Overview](docs/hackathons/0g-apac.md) | 0G data infrastructure, AI risk pipeline, decentralized intelligence |
 | Colosseum Frontier | [View Submission Overview](docs/hackathons/colosseum-frontier.md) | Solana, Kamino, wallet-native risk intelligence |
 
@@ -671,6 +671,9 @@ Circuit opens after repeated RPC failures (`KAMINO_READ_DISABLED` style errors).
 
 **Related**  
 [Vault gateway](#vault-gateway-and-execution-rail) for `og_chain` query routing; [web docs](https://aquarius-web.vercel.app/docs/zero-gravity).
+
+**0G Chain (EVM mainnet — HackQuest / 0G APAC Track 5 proof)**  
+On-chain anchor for deterministic commitments: Solidity `RiskCommitmentAnchor` (`contracts/src/og/RiskCommitmentAnchor.sol`) + viem deploy script (`apps/api/scripts/0g-chain-anchor.ts`). Step-by-step submission checklist: [`docs/integrations/0g-chain-hackquest-proof.md`](docs/integrations/0g-chain-hackquest-proof.md).
 
 ---
 

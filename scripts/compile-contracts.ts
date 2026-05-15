@@ -71,6 +71,8 @@ const TARGET_CONTRACTS = [
   "CCIPCoordinator",
   "AquariusPerChainVault",
   "CuratedDelegationRouter",
+  /** 0G Chain (EVM mainnet) — HackQuest / 0G APAC integration anchor */
+  "RiskCommitmentAnchor",
 ];
 
 const artifacts: Record<string, { abi: any[]; bytecode: string }> = {};
