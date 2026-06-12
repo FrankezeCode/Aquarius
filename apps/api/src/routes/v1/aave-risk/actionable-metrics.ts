@@ -14,7 +14,11 @@ import { createMarketDataProvider } from "../../../adapters/providerFactory.js";
 import { deriveChainMetrics } from "../../../protocols/aave/risk-intelligence/signals.js";
 import type { PositionSnapshot } from "../../../domain/models/PositionSnapshot.js";
 import { assertAaveValidationMode } from "./validation-guard.js";
-import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
+import {
+  formatAaveActiveChains,
+  isAaveActiveChain,
+  resolveAaveActiveChain,
+} from "./chain.js";
 
 interface ActionableMetric {
   id: string;
@@ -150,7 +154,7 @@ export function createActionableMetricsRoute() {
         if (requestedChain && !isAaveActiveChain(requestedChain)) {
           return reply.status(400).send({
             error: "Unsupported chain",
-            message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+            message: `Unsupported chain "${request.query.chain}". Supported chains: ${formatAaveActiveChains()}.`,
           });
         }
         const chain = resolveAaveActiveChain(requestedChain);

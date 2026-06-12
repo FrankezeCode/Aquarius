@@ -20,6 +20,10 @@ import { MockMarketDataProvider } from "./mock/MockMarketDataProvider.js";
 import { TenderlyMarketDataProvider } from "./tenderly/TenderlyMarketDataProvider.js";
 import { OnchainMarketDataProvider } from "./onchain/OnchainMarketDataProvider.js";
 import { GraphMarketDataProvider } from "./realtime/GraphMarketDataProvider.js";
+import {
+  resolveOnchainRpcUrl,
+  resolveTenderlyRpcUrl,
+} from "../infrastructure/aave/chain-rpc.js";
 
 export type DataProviderMode = "mock" | "tenderly" | "onchain" | "realtime";
 
@@ -53,18 +57,6 @@ export function getTenderlyValidationError(): string | null {
 
 export function createMarketDataProvider(): IMarketDataProvider {
   const mode = resolveDataProviderMode();
-  const resolveTenderlyRpc = (chainId: string): string | null => {
-    if (chainId === "polygon") {
-      return process.env.TENDERLY_RPC_URL_POLYGON ?? process.env.TENDERLY_RPC_URL ?? null;
-    }
-    return process.env.TENDERLY_RPC_URL_ETHEREUM ?? process.env.TENDERLY_RPC_URL ?? null;
-  };
-  const resolveOnchainRpc = (chainId: string): string | null => {
-    if (chainId === "polygon") {
-      return process.env.RPC_URL_POLYGON ?? process.env.RPC_URL ?? null;
-    }
-    return process.env.RPC_URL_ETHEREUM ?? process.env.RPC_URL ?? null;
-  };
 
   switch (mode) {
     case "realtime": {
@@ -81,14 +73,14 @@ export function createMarketDataProvider(): IMarketDataProvider {
 
     case "tenderly":
       return new TenderlyMarketDataProvider(
-        resolveTenderlyRpc("ethereum")!,
-        resolveTenderlyRpc
+        resolveTenderlyRpcUrl("ethereum")!,
+        resolveTenderlyRpcUrl
       );
 
     case "onchain":
       return new OnchainMarketDataProvider(
-        resolveOnchainRpc("ethereum")!,
-        resolveOnchainRpc
+        resolveOnchainRpcUrl("ethereum")!,
+        resolveOnchainRpcUrl
       );
 
     case "mock":

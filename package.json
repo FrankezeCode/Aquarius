@@ -22,6 +22,9 @@
     "0g:chain:deploy": "pnpm --filter api exec tsx --env-file=../../.env scripts/0g-chain-anchor.ts deploy",
     "0g:chain:deploy:testnet": "pnpm --filter api run 0g:chain:deploy:testnet",
     "0g:chain:deploy:mainnet": "pnpm --filter api run 0g:chain:deploy:mainnet",
+    "arbitrum:policy-guard:deploy": "pnpm --filter api run arbitrum:policy-guard:deploy",
+    "arbitrum:policy-guard:deploy:sepolia": "pnpm --filter api run arbitrum:policy-guard:deploy:sepolia",
+    "arbitrum:agent-demo": "pnpm --filter api run arbitrum:agent-demo",
     "delegate:testnet-smoke": "tsx scripts/delegate-testnet-smoke.ts"
   },
   "devDependencies": {

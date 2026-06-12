@@ -132,6 +132,7 @@ Aquarius has been refined across multiple hackathons. Each event has its own ded
 | Chainlink Convergence [online submisson](https://chain.link/hack-26/projects/aquarius)| [View Submission Overview](docs/hackathons/chainlink-convergence.md) | CRE, CCIP, orchestration, controlled execution |
 | 0G APAC | [View Submission Overview](docs/hackathons/0g-apac.md) | 0G data infrastructure, AI risk pipeline, decentralized intelligence |
 | Colosseum Frontier | [View Submission Overview](docs/hackathons/colosseum-frontier.md) | Solana, Kamino, wallet-native risk intelligence |
+| Arbitrum Open House London | [View Submission Overview](docs/hackathons/arbitrum-open-house.md) | Arbitrum Aave risk agent, CRE orchestration, on-chain policy guard |
 
 ## Problem & approach
 

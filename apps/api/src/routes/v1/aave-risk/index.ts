@@ -25,6 +25,7 @@ import { createUserHealthRoute } from "./user-health.js";
 import { createUserRiskRoute } from "./user-risk.js";
 import { createActionableMetricsRoute } from "./actionable-metrics.js";
 import { createStressTestRoute } from "./stress-test.js";
+import { createArbitrumAgentPackRoute } from "./arbitrum-agent-pack.js";
 
 /**
  * Singleton query service — shared across all requests.
@@ -57,4 +58,8 @@ export async function registerAaveRiskApiRoutes(
   // Actionable metrics and stress testing
   await app.register(createActionableMetricsRoute(), { prefix: "/actionable-metrics" });
   await app.register(createStressTestRoute(), { prefix: "/stress-test" });
+
+  await app.register(createArbitrumAgentPackRoute(), {
+    prefix: "/arbitrum/agent-pack",
+  });
 }

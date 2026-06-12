@@ -10,7 +10,11 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { HealthEngine } from "../../../services/health-engine/index.js";
 import { assertAaveValidationMode } from "./validation-guard.js";
-import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
+import {
+  formatAaveActiveChains,
+  isAaveActiveChain,
+  resolveAaveActiveChain,
+} from "./chain.js";
 
 const engine = new HealthEngine();
 
@@ -27,7 +31,7 @@ export function createProtocolHealthRoute() {
         if (requestedChain && !isAaveActiveChain(requestedChain)) {
           return reply.status(400).send({
             error: "Unsupported chain",
-            message: `Unsupported chain "${request.params.chain}". Supported chains: ethereum, polygon.`,
+            message: `Unsupported chain "${request.params.chain}". Supported chains: ${formatAaveActiveChains()}.`,
           });
         }
         const chain = resolveAaveActiveChain(requestedChain);

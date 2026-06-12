@@ -31,6 +31,7 @@ This document maps **HTTP routes** to a coarse **trust / side-effect class** so 
 | GET | `/vault-gateway/routing` | Read / advisory | Advisory routing + per-sleeve `delegationExecution`. |
 | POST | `/vault-gateway/intents` | **Execution / mutation** | Starts orchestration when `VAULT_GATEWAY_EXECUTION_ENABLED`; Bearer token. See [ADR 0003](../adr/0003-phase0-orchestration-and-execution.md), [`post-intents.ts`](../../apps/api/src/routes/v1/vault-gateway/post-intents.ts). |
 | GET | `/vault-gateway/jobs/:jobId` | Read + side effects | Polls job store; Bearer token. |
+| GET | `/aave-risk/arbitrum/agent-pack/:address` | Read / advisory | Arbitrum buildathon bundle: user risk + CRE workflow + policy guard env hint. |
 | GET | `/kamino-risk/health`, `/kamino-risk/snapshot` | Read / advisory | Solana/Kamino reads. |
 | POST | `/kamino-risk/repay/simulate` | **Execution / mutation** (simulation) | Dry-run / simulate path; policy + dedicated rate limit (`RATE_LIMIT_KAMINO_WRITE_MAX`). |
 | POST | `/agent-enrollment/*` | **Execution / mutation** | Enrollment and demo flows (multiple POSTs under [`agent-enrollment`](../../apps/api/src/routes/v1/agent-enrollment/index.ts)). |

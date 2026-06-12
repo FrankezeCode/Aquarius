@@ -16,7 +16,11 @@ import {
 } from "../../adapters/providerFactory.js";
 import { getCreOrchestrationAdapter } from "../../infrastructure/orchestration/index.js";
 import { registerCREDemoRoutes } from "./demo.js";
-import { isAaveActiveChain, resolveAaveActiveChain } from "../v1/aave-risk/chain.js";
+import {
+  formatAaveActiveChains,
+  isAaveActiveChain,
+  resolveAaveActiveChain,
+} from "../v1/aave-risk/chain.js";
 
 const creOrchestration = getCreOrchestrationAdapter();
 
@@ -38,7 +42,7 @@ export async function registerCRERoutes(
     if (requestedChain && !isAaveActiveChain(requestedChain)) {
       return reply.status(400).send({
         error: "UNSUPPORTED_CHAIN",
-        message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+        message: `Unsupported chain "${request.query.chain}". Supported chains: ${formatAaveActiveChains()}.`,
       });
     }
     const chainId = resolveAaveActiveChain(requestedChain);

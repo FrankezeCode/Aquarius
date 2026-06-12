@@ -11,7 +11,11 @@ import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { UserRiskProjectionService } from "../../../services/health-engine/user-risk-projection.js";
 import { assertAaveValidationMode } from "./validation-guard.js";
 import { normalizeEthereumAddress } from "./address-normalizer.js";
-import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
+import {
+  formatAaveActiveChains,
+  isAaveActiveChain,
+  resolveAaveActiveChain,
+} from "./chain.js";
 
 const projection = new UserRiskProjectionService();
 
@@ -29,7 +33,7 @@ export function createUserRiskRoute() {
         if (requestedChain && !isAaveActiveChain(requestedChain)) {
           return reply.status(400).send({
             error: "Unsupported chain",
-            message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+            message: `Unsupported chain "${request.query.chain}". Supported chains: ${formatAaveActiveChains()}.`,
           });
         }
         const chain = resolveAaveActiveChain(requestedChain);

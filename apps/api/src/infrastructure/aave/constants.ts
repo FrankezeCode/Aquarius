@@ -10,6 +10,11 @@ export const AAVE_V3_ORACLE = "0x54586bE62E3c3580375aE3723C145253060Ca0C2" as co
 export const AAVE_V3_POOL_POLYGON = "0x794a61358D6845594F94dc1DB02A252b5b4814aD" as const;
 export const AAVE_V3_ORACLE_POLYGON = "0xb023e699F5a33916Ea823A16485e259257cA8Bd1" as const;
 
+/** Aave V3 on Arbitrum One — same pool proxy as other deployed networks. */
+export const AAVE_V3_POOL_ARBITRUM = "0x794a61358D6845594F94dc1DB02A252b5b4814aD" as const;
+export const AAVE_V3_ORACLE_ARBITRUM =
+  "0xb56c2F0B653B39e36bA04bE58c7DD4c7e90d6cBc" as const;
+
 export const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" as const;
 export const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as const;
 export const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7" as const;
@@ -43,18 +48,31 @@ export const DEFAULT_TARGET_ADDRESSES_POLYGON: readonly string[] = [
   ...DEFAULT_TARGET_ADDRESSES,
 ];
 
+/** Deterministic baseline for Arbitrum One Aave V3 reads (whale / active users). */
+export const DEFAULT_TARGET_ADDRESSES_ARBITRUM: readonly string[] = [
+  "0x5aFE3855358E112B5647B952709E6165e1c1eEEe",
+  "0x28C6c06298d514Db089934071355E5743bf21d60",
+  "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5",
+  "0x6262998Ced04146fA42253a5C0AF90CA02dfd2A3",
+  "0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296",
+];
+
 export function getAavePoolAddress(chainId: string): string {
-  return chainId === "polygon" ? AAVE_V3_POOL_POLYGON : AAVE_V3_POOL;
+  if (chainId === "polygon") return AAVE_V3_POOL_POLYGON;
+  if (chainId === "arbitrum") return AAVE_V3_POOL_ARBITRUM;
+  return AAVE_V3_POOL;
 }
 
 export function getAaveOracleAddress(chainId: string): string {
-  return chainId === "polygon" ? AAVE_V3_ORACLE_POLYGON : AAVE_V3_ORACLE;
+  if (chainId === "polygon") return AAVE_V3_ORACLE_POLYGON;
+  if (chainId === "arbitrum") return AAVE_V3_ORACLE_ARBITRUM;
+  return AAVE_V3_ORACLE;
 }
 
 export function getDefaultTargetAddresses(chainId: string): readonly string[] {
-  return chainId === "polygon"
-    ? DEFAULT_TARGET_ADDRESSES_POLYGON
-    : DEFAULT_TARGET_ADDRESSES;
+  if (chainId === "polygon") return DEFAULT_TARGET_ADDRESSES_POLYGON;
+  if (chainId === "arbitrum") return DEFAULT_TARGET_ADDRESSES_ARBITRUM;
+  return DEFAULT_TARGET_ADDRESSES;
 }
 
 /**

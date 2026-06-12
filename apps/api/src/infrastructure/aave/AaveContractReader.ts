@@ -9,7 +9,7 @@
  */
 
 import { createPublicClient, http, formatUnits, type PublicClient, type Address } from "viem";
-import { mainnet, polygon } from "viem/chains";
+import { arbitrum, mainnet, polygon } from "viem/chains";
 import { AAVE_POOL_ABI, AAVE_ORACLE_ABI } from "./abis.js";
 import {
   AAVE_BASE_CURRENCY_DECIMALS,
@@ -43,8 +43,14 @@ export class AaveContractReader {
 
   constructor(rpcUrl: string, chainId: string = "ethereum") {
     this.chainId = chainId;
+    const viemChain =
+      chainId === "polygon"
+        ? polygon
+        : chainId === "arbitrum"
+          ? arbitrum
+          : mainnet;
     this.client = createPublicClient({
-      chain: chainId === "polygon" ? polygon : mainnet,
+      chain: viemChain,
       transport: http(rpcUrl),
     });
   }

@@ -8,10 +8,13 @@ import {
   AaveContractReader,
   type ParsedAccountData,
 } from "../../infrastructure/aave/AaveContractReader.js";
+import {
+  resolveOnchainRpcUrl,
+  resolveTenderlyRpcUrl,
+} from "../../infrastructure/aave/chain-rpc.js";
 
 const DEFAULT_CHAIN = "ethereum";
 const DEFAULT_SNAPSHOT_LIMIT = 50;
-const POLYGON_CHAIN = "polygon";
 
 function normalizeAddress(address: string): string {
   return address.toLowerCase();
@@ -26,18 +29,8 @@ export function resolveRpcUrlForMode(
   mode: DataProviderMode,
   chainId: string = DEFAULT_CHAIN
 ): string | null {
-  if (mode === "tenderly") {
-    if (chainId === POLYGON_CHAIN) {
-      return process.env.TENDERLY_RPC_URL_POLYGON ?? process.env.TENDERLY_RPC_URL ?? null;
-    }
-    return process.env.TENDERLY_RPC_URL_ETHEREUM ?? process.env.TENDERLY_RPC_URL ?? null;
-  }
-  if (mode === "onchain") {
-    if (chainId === POLYGON_CHAIN) {
-      return process.env.RPC_URL_POLYGON ?? process.env.RPC_URL ?? null;
-    }
-    return process.env.RPC_URL_ETHEREUM ?? process.env.RPC_URL ?? null;
-  }
+  if (mode === "tenderly") return resolveTenderlyRpcUrl(chainId);
+  if (mode === "onchain") return resolveOnchainRpcUrl(chainId);
   return null;
 }
 

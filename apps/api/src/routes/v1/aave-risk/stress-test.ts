@@ -16,7 +16,11 @@ import {
   getActiveDataMode,
 } from "../../../services/health-engine/provider-data.js";
 import { normalizeEthereumAddress } from "./address-normalizer.js";
-import { isAaveActiveChain, resolveAaveActiveChain } from "./chain.js";
+import {
+  formatAaveActiveChains,
+  isAaveActiveChain,
+  resolveAaveActiveChain,
+} from "./chain.js";
 
 interface StressScenario {
   name: string;
@@ -66,7 +70,7 @@ export function createStressTestRoute() {
       if (requestedChain && !isAaveActiveChain(requestedChain)) {
         return reply.status(400).send({
           error: "Unsupported chain",
-          message: `Unsupported chain "${request.query.chain}". Supported chains: ethereum, polygon.`,
+          message: `Unsupported chain "${request.query.chain}". Supported chains: ${formatAaveActiveChains()}.`,
         });
       }
       const chain = resolveAaveActiveChain(requestedChain);
