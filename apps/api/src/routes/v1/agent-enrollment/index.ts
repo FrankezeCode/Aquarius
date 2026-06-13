@@ -15,11 +15,12 @@ import {
   assertAaveValidationMode,
   assertTenderlyBindingMode,
 } from "../aave-risk/validation-guard.js";
+import type { AaveActiveChain } from "../aave-risk/chain.js";
 
 const service = new AgentEnrollmentService();
 type BufferVaultDemoPosition = {
   walletAddress: string;
-  chain: "ethereum" | "polygon";
+  chain: AaveActiveChain;
   asset: string;
   amount: number;
   estimatedApyPct: number;
@@ -32,7 +33,7 @@ const bufferVaultDemoStore = new Map<string, BufferVaultDemoPosition>();
 
 function buildBufferVaultDemoKey(
   walletAddress: string,
-  chain: "ethereum" | "polygon"
+  chain: AaveActiveChain
 ): string {
   return `${walletAddress.toLowerCase()}:${chain}`;
 }
@@ -47,9 +48,16 @@ function isPhaseBPolicyBindingEnabled(): boolean {
   return process.env.PHASE_B_POLICY_BINDING === "1";
 }
 
-function resolvePolicyBindingContractAddress(chain: "ethereum" | "polygon"): string | null {
+function resolvePolicyBindingContractAddress(chain: AaveActiveChain): string | null {
   if (chain === "polygon") {
     return process.env.POLICY_BINDING_CONTRACT_POLYGON ?? null;
+  }
+  if (chain === "arbitrum") {
+    return (
+      process.env.POLICY_BINDING_CONTRACT_ARBITRUM ??
+      process.env.ARBITRUM_POLICY_GUARD_ADDRESS ??
+      null
+    );
   }
   return process.env.POLICY_BINDING_CONTRACT_ETHEREUM ?? null;
 }

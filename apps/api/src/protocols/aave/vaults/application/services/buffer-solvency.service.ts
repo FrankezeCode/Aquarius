@@ -5,7 +5,7 @@
 import type { AaveRiskSnapshot } from "../../../domain/aave-risk-snapshot.js";
 import type { UnderlyingAsset } from "../../domain/aq-asset.js";
 import type { BufferVaultPort } from "../ports/vault.port.js";
-import type { Config } from "../../../../config/index.js";
+import type { Config } from "../../../../../config/index.js";
 import {
   aggregateTvlUsd,
   buildUsdPerUnitMap,

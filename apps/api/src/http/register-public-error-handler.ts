@@ -70,9 +70,7 @@ export function registerPublicErrorHandler(app: FastifyInstance): void {
       const status =
         typeof fe.statusCode === "number" && fe.statusCode >= 400
           ? fe.statusCode
-          : typeof fe.status === "number" && fe.status >= 400
-            ? fe.status
-            : 500;
+          : 500;
 
       if (status === 429) {
         return reply.status(429).send({
