@@ -521,7 +521,8 @@ EVM is the **primary lending-intelligence surface** today: deterministic monitor
 
 | Variable                                         | Purpose                                                                                                      |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `RPC_URL`, `RPC_URL_ETHEREUM`, `RPC_URL_POLYGON` | EVM JSON-RPC.                                                                                                |
+| `RPC_URL`, `RPC_URL_ETHEREUM`, `RPC_URL_POLYGON`, `RPC_URL_ARBITRUM` | EVM JSON-RPC (Arbitrum One reads when `chain=arbitrum`).                                                       |
+| `ARBITRUM_NETWORK`, `ARBITRUM_RPC_URL`, `ARBITRUM_POLICY_GUARD_ADDRESS` | Arbitrum Sepolia / One deploy and agent-pack policy guard address.                                          |
 | `DATA_PROVIDER_MODE`                             | `mock` vs live provider selection.                                                                           |
 | `AAVE_VALIDATION_REQUIRE_TENDERLY`               | Enforce Tenderly in validation flows.                                                                        |
 | `TENDERLY_RPC_URL`, `TENDERLY_FORK_ID`           | Tenderly fork / simulation.                                                                                  |
@@ -534,6 +535,9 @@ Public `/api/v1` rate limit: `RATE_LIMIT_PUBLIC_MAX`. RPC outages surface as rea
 
 **Related**  
 [Vault strategy](#vault-strategy) / [Vault strategy and sleeves](#vault-strategy-and-sleeves); [Chainlink](#chainlink) for execution spine.
+
+**Arbitrum Open House (buildathon proof)**  
+Agentic Aave risk on `chain=arbitrum`, CRE `GET /api/cre/run?chain=arbitrum`, agent bundle `GET /api/v1/aave-risk/arbitrum/agent-pack/:address`, and on-chain **`AquaAgentPolicyGuard`** on Arbitrum Sepolia (`0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa`). Judge README: [`docs/hackathons/arbitrum-open-house.md`](docs/hackathons/arbitrum-open-house.md). Deploy: `pnpm arbitrum:policy-guard:deploy:sepolia`. Live UI: [`/protocol/aave/arbitrum`](https://aquarius-web.vercel.app/protocol/aave/arbitrum).
 
 ---
 
@@ -1098,6 +1102,8 @@ Run the `curl` in another terminal once the API has bound to the port (if you ch
 | `pnpm run:ccc-demo`                                                                                               | CCC demo (`[scripts/run-ccc-demo.ts](scripts/run-ccc-demo.ts)`)                                   |
 | `pnpm run:local-cre-don-sim`                                                                                      | Local CRE DON confidential simulation / confidential HTTP validation                              |
 | `cre -T staging-settings workflow simulate workflows/aave-risk --non-interactive --trigger-index 0 --engine-logs` | CRE CLI workflow proof (requires CRE CLI)                                                         |
+| `pnpm arbitrum:policy-guard:deploy:sepolia`                                                                     | Deploy `AquaAgentPolicyGuard` on Arbitrum Sepolia (buildathon on-chain proof)                     |
+| `pnpm arbitrum:agent-demo -- 0x<address>`                                                                       | One-shot Arbitrum agent-pack demo (mock or live per `DATA_PROVIDER_MODE`)                          |
 | `node --import tsx --test apps/api/tests/protocols/aave/local-don-ccc.execution.integration.test.ts`              | `local_don_ccc` integration test                                                                  |
 | `pnpm run:full-validation`                                                                                        | Full architecture validation (`[scripts/run-full-validation.ts](scripts/run-full-validation.ts)`) |
 

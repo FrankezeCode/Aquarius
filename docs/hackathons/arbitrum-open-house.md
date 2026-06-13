@@ -25,7 +25,7 @@
 
 - **Live path:** Connect wallet on `/protocol/aave/arbitrum` → user risk + CRE agent loop.
 - **Judge API:** `GET /api/v1/aave-risk/arbitrum/agent-pack/:address` — one-shot demo bundle.
-- **On-chain proof:** deploy `AquaAgentPolicyGuard` with `pnpm arbitrum:policy-guard:deploy` (Sepolia or One).
+- **On-chain proof:** `AquaAgentPolicyGuard` on **Arbitrum Sepolia** — `0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa` ([Arbiscan](https://sepolia.arbiscan.io/address/0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa)). Judges can redeploy with `pnpm arbitrum:policy-guard:deploy:sepolia`.
 
 ---
 
@@ -85,10 +85,34 @@ flowchart LR
 | Component | Status | Evidence |
 |-----------|--------|----------|
 | **Arbitrum One (42161)** | **Used** — Aave v3 reads + CRE `chain=arbitrum` | [`chain.ts`](../../apps/api/src/routes/v1/aave-risk/chain.ts), [`constants.ts`](../../apps/api/src/infrastructure/aave/constants.ts) |
-| **AquaAgentPolicyGuard** | **Deploy script** — judge repro | [`arbitrum-policy-guard.ts`](../../apps/api/scripts/arbitrum-policy-guard.ts) |
+| **AquaAgentPolicyGuard** | **Used — Arbitrum Sepolia deploy** | [`AquaAgentPolicyGuard.sol`](../../contracts/src/AquaAgentPolicyGuard.sol), [`arbitrum-policy-guard.ts`](../../apps/api/scripts/arbitrum-policy-guard.ts) |
 | **CRE orchestration** | **Used** | [`/api/cre/run`](../../apps/api/src/routes/cre/index.ts), [`run-cre-workflow.ts`](../../packages/domain/cre/run-cre-workflow.ts) |
 | **Vault-gateway** | **Advisory** — `arbitrum` in manifest | [`manifest.ts`](../../apps/api/src/services/vault-gateway/manifest.ts) |
 | **Full AquaAgent + mitigation** | **Roadmap** — policy guard first for hackathon scope | [`AquaAgent.sol`](../../contracts/src/AquaAgent.sol) |
+
+We do **not** claim production mainnet autonomous mitigation in this submission.
+
+### Why we deployed on Arbitrum Sepolia, not Arbitrum One
+
+Aquarius touches **real user economic risk** (lending health, mitigation, buffer vaults). Our team policy for this buildathon:
+
+1. **Product safety** — Core execution paths (autonomous agents, buffer vaults, full mitigation) remain in **validation and audit** before production mainnet posture for user funds.
+2. **Scope of `AquaAgentPolicyGuard`** — This contract **does not custody user funds**; it enforces per-action and daily USD bounds for policy-bound agents. Even so, we kept **on-chain guard writes on Arbitrum Sepolia (chain id 421614)** to match the same pre-audit bar as the rest of the stack.
+3. **Reproducibility for judges** — Sepolia ETH is available from public faucets so reviewers can redeploy without mainnet capital.
+
+**Planned next step:** Redeploy `AquaAgentPolicyGuard` on **Arbitrum One (42161)** after internal validation and external audit, using `pnpm arbitrum:policy-guard:deploy`.
+
+**Team-deployed testnet proof (verifiable on explorer):**
+
+| Item | Value |
+|------|--------|
+| Network | Arbitrum Sepolia (**421614**) |
+| Contract | `AquaAgentPolicyGuard` |
+| Address | `0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa` |
+| Contract explorer | <https://sepolia.arbiscan.io/address/0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa> |
+| Deploy transaction | <https://sepolia.arbiscan.io/tx/0x618471c0e07eb1b4b7eadd7b16218a8ae77ec690a86da9b12f354c0c342c8a17> |
+
+Judges may deploy their **own** policy guard on Sepolia using §5.4 (recommended).
 
 ---
 
@@ -172,6 +196,7 @@ Open `http://localhost:3000/protocol/aave/arbitrum` — connect wallet on **Arbi
 - **Secrets:** `ARBITRUM_DEPLOY_PRIVATE_KEY`, RPC keys — env only, never commit.
 - **Execution POSTs** remain gated (`VAULT_GATEWAY_EXECUTION_ENABLED=false` by default).
 - **Best Agentic Project angle:** CRE + AI recommendation + policy guard = bounded autonomy.
+- **Team contract (Sepolia):** `0xf02f4e1d59c156dde20fa84007f69a45deb4a6fa` — set `ARBITRUM_POLICY_GUARD_ADDRESS` in `.env` so agent-pack responses include it.
 
 ---
 
